@@ -1,0 +1,47 @@
+[
+  {
+    "Id": "00924b34-7f8b-4288-9981-1893b8412d6b",
+    "Email": "test@test.com",
+    "PasswordHash": "iX51TtZ5lnlCjecoy\u002Btshg==:xzokzp00cOfF7qMTyxLhfJ\u002BK\u002B2RAWy8nD5/5eleTB54=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:21:29.1926711Z"
+  },
+  {
+    "Id": "d40d4d89-cffd-433b-b9b8-cf0c84758cdf",
+    "Email": "john@john.com",
+    "PasswordHash": "m5Ee3T/IprJ6vv6D54136A==:wVs3451mkUm0WvrNrkjrReAlGHISWmsApTBaQVjhZdw=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:40:00Z"
+  },
+  {
+    "Id": "28d7b502-9725-4dad-abf8-aaad8300b91f",
+    "Email": "admin@admin.com",
+    "PasswordHash": "HrvLbGCnxvtY9J1isv8klA==:50LZmu6f7KCsTHpCRqTzgJdEkWFy/twlNiAsj7DUNqM=",
+    "Role": "admin",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:40:00Z"
+  },
+  {
+    "Id": "bb221fab-ab36-4e97-8865-1c50993dc3e7",
+    "Email": "test-jessie@test.com",
+    "PasswordHash": "CP3dazbw4bomoX7yagf7yg==:aRKZZLSL/b0qTzaDGwKKhyJD1pXMpJlZPjKsnZdSxtE=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-31T07:07:38.7373625Z"
+  },
+  {
+    "Id": "0a0ef26c-59f4-433d-a79d-506fbd205bec",
+    "Email": "test-12@test.com",
+    "PasswordHash": "ZjoA2/WmVUJWDazZ8jQhYA==:Woia0B6GEYTmxTIwnAYWm9pRNLho8ehZFXmVcQW8N8g=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-31T08:14:27.6122419Z"
+  }
+]
