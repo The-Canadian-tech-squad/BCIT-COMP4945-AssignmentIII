@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Dashboard | Answerly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-page="user-dashboard">
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Answerly</a>
+      <nav class="topbar-nav">
+        <span id="currentUserLabel" class="nav-pill">Loading session...</span>
+        <button id="logoutButton" class="button button-ghost" type="button">Logout</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-layout">
+      <section class="card card-accent dashboard-summary">
+        <p class="eyebrow">User Dashboard</p>
+        <h1>Trivia player area</h1>
+        <p class="lead">Pick a quiz by era, review your recent scores, and continue building your seniors-focused trivia experience.</p>
+
+        <dl class="metrics-grid">
+          <div class="metric-card">
+            <dt>Role</dt>
+            <dd id="roleValue">User</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Status</dt>
+            <dd>Authenticated</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="card card-panel quiz-categories-panel">
+        <div class="section-heading">
+          <h2>Categories Choice</h2>
+        </div>
+        <div id="quizCategoryList" class="quiz-category-list"></div>
+        <p id="dashboardMessage" class="feedback-message" aria-live="polite"></p>
+      </section>
+
+      <section class="card card-panel score-summary-panel">
+        <div class="section-heading">
+          <h2>Recent Score Summary</h2>
+        </div>
+        <div class="stats-strip">
+          <div class="metric-card">
+            <dt>Total attempts</dt>
+            <dd id="totalAttemptsValue">--</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Total score</dt>
+            <dd id="totalScoreValue">--</dd>
+          </div>
+        </div>
+        <div class="recent-history-block">
+          <p class="panel-label">Recent top results</p>
+          <div id="recentResultsList" class="recent-results-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="quizModal" class="quiz-modal" hidden>
+    <div class="quiz-modal-backdrop" data-close-quiz="true"></div>
+    <section class="quiz-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="quizModalTitle">
+      <div class="quiz-modal-header">
+        <div>
+          <p id="quizModalEyebrow" class="eyebrow">Quiz Playback</p>
+          <h2 id="quizModalTitle">Quiz Title</h2>
+        </div>
+        <button id="closeQuizButton" class="button button-ghost" type="button">Close</button>
+      </div>
+
+      <div class="quiz-progress-row">
+        <span id="quizQuestionCounter" class="nav-pill">Question 1 / 5</span>
+        <span id="quizScorePill" class="nav-pill">Score 0 / 5</span>
+      </div>
+
+      <div class="quiz-media-panel">
+        <p id="quizMediaLabel" class="panel-label">Media prompt</p>
+        <div id="quizMediaBox" class="quiz-media-box"></div>
+      </div>
+
+      <div class="quiz-question-block">
+        <h3 id="quizQuestionText" class="quiz-question-text">Question text</h3>
+        <div id="quizOptionsList" class="quiz-options-list"></div>
+      </div>
+
+      <div class="quiz-modal-footer">
+        <p id="quizFeedbackMessage" class="feedback-message" aria-live="polite"></p>
+        <button id="nextQuestionButton" class="button" type="button" disabled>Next question</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="./assets/js/pages/user-dashboard-page.js"></script>
+</body>
+</html>

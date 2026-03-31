@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Answerly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-page="admin-dashboard">
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Answerly</a>
+      <nav class="topbar-nav">
+        <span id="currentAdminLabel" class="nav-pill">Loading admin...</span>
+        <button id="logoutButton" class="button button-ghost" type="button">Logout</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-layout">
+      <section class="card card-accent dashboard-summary">
+        <p class="eyebrow">Admin Dashboard</p>
+        <h1>Quiz management area</h1>
+        <p class="lead">Admins can manage quiz questions on the left and monitor player performance on the right.</p>
+
+        <dl class="metrics-grid">
+          <div class="metric-card">
+            <dt>Role</dt>
+            <dd>Admin</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Total quizzes</dt>
+            <dd id="quizCountValue">--</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Categories</dt>
+            <dd id="categoryCountValue">--</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="card card-panel quiz-categories-panel admin-dashboard-left">
+        <div class="section-heading">
+          <h2>Quiz Questions</h2>
+          <button id="newQuizButton" class="button button-secondary" type="button">New quiz</button>
+        </div>
+        <p id="adminMessage" class="feedback-message" aria-live="polite"></p>
+        <div id="quizAdminList" class="quiz-category-list"></div>
+        <div class="editor-actions admin-pagination-actions">
+          <button id="previousQuizButton" class="button button-secondary" type="button">Previous</button>
+          <button id="nextQuizButton" class="button button-secondary" type="button">Next</button>
+        </div>
+      </section>
+
+      <section class="card card-panel score-summary-panel admin-dashboard-right">
+        <div class="section-heading">
+          <h2>User Score Summary</h2>
+        </div>
+
+        <div class="stats-strip">
+          <div class="metric-card">
+            <dt>Current user</dt>
+            <dd id="adminCurrentUserValue">--</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Total score</dt>
+            <dd id="adminTotalScoreValue">--</dd>
+          </div>
+        </div>
+
+        <div class="recent-history-block">
+          <p class="panel-label">Quiz performance</p>
+          <div id="adminScoreSummaryList" class="recent-results-list"></div>
+        </div>
+
+        <div class="stats-strip admin-user-summary-strip">
+          <div class="metric-card">
+            <dt>Total attempts</dt>
+            <dd id="adminTotalAttemptsValue">--</dd>
+          </div>
+          <div class="metric-card">
+            <dt>Last played</dt>
+            <dd id="adminLastPlayedValue">--</dd>
+          </div>
+        </div>
+
+        <div class="editor-actions admin-pagination-actions">
+          <button id="previousUserButton" class="button button-secondary" type="button">Previous</button>
+          <button id="nextUserButton" class="button button-secondary" type="button">Next</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="questionModal" class="quiz-modal" hidden>
+    <div class="quiz-modal-backdrop" data-close-question="true"></div>
+    <section class="quiz-modal-dialog admin-question-dialog" role="dialog" aria-modal="true" aria-labelledby="questionModalTitle">
+      <div class="quiz-modal-header">
+        <div>
+          <p id="questionModalEyebrow" class="eyebrow">Question Editor</p>
+          <h2 id="questionModalTitle">Question</h2>
+        </div>
+        <button id="closeQuestionModalButton" class="button button-ghost" type="button">Close</button>
+      </div>
+
+      <form id="questionEditorForm" class="form-stack" novalidate>
+        <label class="field">
+          <span>Question text</span>
+          <textarea id="questionTextInput" rows="4"></textarea>
+        </label>
+
+        <label class="field">
+          <span>Media type</span>
+          <select id="questionMediaTypeInput">
+            <option value="Video">Video</option>
+            <option value="Image">Image</option>
+            <option value="Audio">Audio</option>
+            <option value="Quote">Quote</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Media prompt</span>
+          <textarea id="questionMediaPromptInput" rows="3"></textarea>
+        </label>
+
+        <div class="admin-options-grid">
+          <label class="field">
+            <span>Option A</span>
+            <input id="optionAInput" type="text">
+          </label>
+          <label class="field">
+            <span>Option B</span>
+            <input id="optionBInput" type="text">
+          </label>
+          <label class="field">
+            <span>Option C</span>
+            <input id="optionCInput" type="text">
+          </label>
+          <label class="field">
+            <span>Option D</span>
+            <input id="optionDInput" type="text">
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Correct answer</span>
+          <select id="correctAnswerInput">
+            <option value="0">Option A</option>
+            <option value="1">Option B</option>
+            <option value="2">Option C</option>
+            <option value="3">Option D</option>
+          </select>
+        </label>
+
+        <div class="editor-actions">
+          <button class="button" type="submit">Save question</button>
+          <button id="deleteQuestionButton" class="button button-secondary" type="button">Delete question</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="quizModal" class="quiz-modal" hidden>
+    <div class="quiz-modal-backdrop" data-close-quiz-editor="true"></div>
+    <section class="quiz-modal-dialog admin-question-dialog" role="dialog" aria-modal="true" aria-labelledby="quizModalTitle">
+      <div class="quiz-modal-header">
+        <div>
+          <p class="eyebrow">Quiz Editor</p>
+          <h2 id="quizModalTitle">Edit Quiz</h2>
+        </div>
+        <button id="closeQuizModalButton" class="button button-ghost" type="button">Close</button>
+      </div>
+
+      <form id="quizMetaForm" class="form-stack" novalidate>
+        <label class="field">
+          <span>Quiz title</span>
+          <input id="quizModalNameInput" type="text" required>
+        </label>
+
+        <label class="field">
+          <span>Category</span>
+          <input id="quizModalCategoryInput" type="text" required>
+        </label>
+
+        <label class="field">
+          <span>Status</span>
+          <select id="quizModalStatusInput">
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+          </select>
+        </label>
+
+        <div class="recent-history-block admin-details-block">
+          <p class="panel-label">Questions</p>
+          <div id="quizModalQuestionRow" class="admin-question-row"></div>
+        </div>
+
+        <div class="editor-actions">
+          <button class="button" type="submit">Save quiz</button>
+          <button id="publishQuizButton" class="button button-secondary" type="button">Publish quiz</button>
+          <button id="deleteQuizButton" class="button button-secondary" type="button">Delete quiz</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script type="module" src="./assets/js/pages/admin-dashboard-page.js"></script>
+</body>
+</html>
