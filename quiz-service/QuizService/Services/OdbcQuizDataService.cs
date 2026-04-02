@@ -73,26 +73,49 @@ public sealed class OdbcQuizDataService : IQuizDataService
         using var connection = CreateConnection();
         await connection.OpenAsync();
 
-        var categoryId = await GetNextIdAsync(connection, _categoriesTable, "CATEGORY_ID");
+        var title = quiz.Title.Trim();
+        var description = quiz.Description.Trim();
 
-        using var command = connection.CreateCommand();
-        command.CommandText = $"""
-            INSERT INTO {_categoriesTable} (CATEGORY_ID, NAME, DESCRIPTION, DISPLAY_ORDER, CREATED_AT, UPDATED_AT)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            """;
-        command.Parameters.Add(new OdbcParameter { Value = categoryId });
-        command.Parameters.Add(new OdbcParameter { Value = quiz.Title.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = quiz.Description.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = 0 });
-        await command.ExecuteNonQueryAsync();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = $"""
+                INSERT INTO {_categoriesTable} (NAME, DESCRIPTION, DISPLAY_ORDER)
+                VALUES (?, ?, ?)
+                """;
+            command.Parameters.Add(new OdbcParameter { Value = title });
+            command.Parameters.Add(new OdbcParameter { Value = description });
+            command.Parameters.Add(new OdbcParameter { Value = 0 });
+            await command.ExecuteNonQueryAsync();
+        }
+
+        long categoryId;
+        using (var query = connection.CreateCommand())
+        {
+            query.CommandText = $"""
+                SELECT CATEGORY_ID
+                FROM {_categoriesTable}
+                WHERE NAME = ?
+                ORDER BY CATEGORY_ID DESC
+                FETCH FIRST 1 ROWS ONLY
+                """;
+            query.Parameters.Add(new OdbcParameter { Value = title });
+
+            var result = await query.ExecuteScalarAsync();
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException("Quiz category was inserted but CATEGORY_ID could not be resolved.");
+            }
+
+            categoryId = Convert.ToInt64(result);
+        }
 
         return new QuizDto
         {
             Id = NumberToGuid(categoryId),
-            Category = quiz.Title.Trim(),
-            Title = quiz.Title.Trim(),
+            Category = title,
+            Title = title,
             Status = NormalizeStatus(quiz.Status),
-            Description = quiz.Description.Trim(),
+            Description = description,
             Questions = []
         };
     }
