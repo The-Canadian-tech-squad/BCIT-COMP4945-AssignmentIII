@@ -23,6 +23,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   min-height: 100%;
 }
@@ -598,6 +602,23 @@ h2 {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.button-danger-outline {
+  background: rgba(154, 53, 42, 0.08);
+  color: var(--danger);
+  border-color: rgba(154, 53, 42, 0.36);
+}
+
+.button-danger-outline:hover,
+.button-danger-outline:focus-visible {
+  background: rgba(154, 53, 42, 0.14);
+  border-color: rgba(154, 53, 42, 0.54);
+}
+
+.button-danger-outline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .button-ghost {
   background: rgba(255, 255, 255, 0.55);
   color: var(--text);
@@ -1088,14 +1109,76 @@ body[data-page="admin-dashboard"] .admin-add-chip {
   color: var(--accent-dark);
 }
 
+
 body[data-page="admin-dashboard"] .admin-question-dialog {
   width: min(820px, 100%);
+}
+
+body[data-page="admin-dashboard"] .admin-add-category-dialog {
+  width: min(560px, 100%);
+}
+
+body[data-page="admin-dashboard"] .admin-confirm-dialog {
+  width: min(560px, 100%);
+}
+
+body[data-page="admin-dashboard"] .admin-confirm-message {
+  margin-top: 0.45rem;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+  line-height: 1.55;
 }
 
 body[data-page="admin-dashboard"] .admin-options-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.9rem;
+}
+
+body[data-page="admin-dashboard"] .admin-media-preview {
+  min-height: 90px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.9rem 1rem;
+  display: grid;
+  align-items: center;
+}
+
+body[data-page="admin-dashboard"] .admin-media-preview-image {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 10px;
+}
+
+body[data-page="admin-dashboard"] .admin-media-preview-player {
+  width: 100%;
+  max-width: 100%;
+}
+
+body[data-page="admin-dashboard"] .admin-media-preview-iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 10px;
+}
+
+body[data-page="admin-dashboard"] .admin-media-preview-quote {
+  margin: 0;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--accent-dark);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+body[data-page="admin-dashboard"] .admin-category-inline-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+body[data-page="admin-dashboard"] .admin-category-inline-row .button {
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {

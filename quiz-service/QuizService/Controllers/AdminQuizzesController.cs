@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizService.DTOs;
+using QuizService.Extensions;
 using QuizService.Services;
 
 namespace QuizService.Controllers;
@@ -58,7 +59,16 @@ public class AdminQuizzesController : ControllerBase
     [HttpPut("{quizId:guid}")]
     public async Task<IActionResult> Update(Guid quizId, [FromBody] QuizDto request)
     {
-        var updatedQuiz = await _quizDataService.UpdateQuizAsync(quizId, request);
+        QuizDto? updatedQuiz;
+        try
+        {
+            updatedQuiz = await _quizDataService.UpdateQuizAsync(quizId, request);
+        }
+        catch (DuplicateCategoryException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+
         return updatedQuiz == null ? NotFound() : Ok(updatedQuiz);
     }
 
@@ -72,7 +82,7 @@ public class AdminQuizzesController : ControllerBase
     [HttpPost("{quizId:guid}/questions")]
     public async Task<IActionResult> CreateQuestion(Guid quizId, [FromBody] QuestionDto request)
     {
-        var question = await _quizDataService.CreateQuestionAsync(quizId, request);
+        var question = await _quizDataService.CreateQuestionAsync(quizId, request, User.GetUserId(), User.GetUserEmail());
         if (question == null)
         {
             return NotFound();

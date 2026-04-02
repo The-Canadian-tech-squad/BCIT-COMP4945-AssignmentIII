@@ -18,6 +18,34 @@ public class CategoriesController : ControllerBase
         _quizDataService = quizDataService;
     }
 
+    [HttpPost]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
+    {
+        var name = request.Name?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return BadRequest(new { message = "Category name is required." });
+        }
+
+        string createdName;
+        try
+        {
+            createdName = await _quizDataService.CreateCategoryAsync(name);
+        }
+        catch (DuplicateCategoryException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+
+        return Ok(new
+        {
+            title = createdName,
+            description = string.Empty,
+            quizCount = 0
+        });
+    }
+
     [HttpGet]
     public async Task<IActionResult> List()
     {
@@ -80,5 +108,10 @@ public class CategoriesController : ControllerBase
     {
         var bytes = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(value.Trim().ToLowerInvariant()));
         return new Guid(bytes);
+    }
+
+    public sealed class CreateCategoryRequest
+    {
+        public string Name { get; set; } = string.Empty;
     }
 }

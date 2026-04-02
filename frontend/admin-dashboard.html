@@ -44,7 +44,7 @@
       <section class="card card-panel quiz-categories-panel admin-dashboard-left">
         <div class="section-heading">
           <h2>Quiz Questions</h2>
-          <button id="newQuizButton" class="button button-secondary" type="button">New quiz</button>
+          <button id="newQuizButton" class="button button-secondary" type="button">New Category</button>
         </div>
         <p id="adminMessage" class="feedback-message" aria-live="polite"></p>
         <div id="quizAdminList" class="quiz-category-list"></div>
@@ -122,9 +122,19 @@
         </label>
 
         <label class="field">
+          <span>YouTube / media URL</span>
+          <input id="questionMediaUrlInput" type="url" placeholder="https://...">
+        </label>
+
+        <label class="field">
           <span>Media prompt</span>
           <textarea id="questionMediaPromptInput" rows="3"></textarea>
         </label>
+
+        <div class="field">
+          <span>Media preview</span>
+          <div id="questionMediaPreview" class="admin-media-preview"></div>
+        </div>
 
         <div class="admin-options-grid">
           <label class="field">
@@ -155,6 +165,11 @@
           </select>
         </label>
 
+        <label class="field">
+          <span>Points</span>
+          <input id="questionPointsInput" type="number" min="1" value="1">
+        </label>
+
         <div class="editor-actions">
           <button class="button" type="submit">Save question</button>
           <button id="deleteQuestionButton" class="button button-secondary" type="button">Delete question</button>
@@ -175,35 +190,75 @@
       </div>
 
       <form id="quizMetaForm" class="form-stack" novalidate>
-        <label class="field">
-          <span>Quiz title</span>
-          <input id="quizModalNameInput" type="text" required>
-        </label>
-
-        <label class="field">
+        <label id="quizModalCategorySelectRow" class="field" hidden>
           <span>Category</span>
-          <input id="quizModalCategoryInput" type="text" required>
+          <select id="quizModalCategorySelect" required></select>
         </label>
 
-        <label class="field">
-          <span>Status</span>
-          <select id="quizModalStatusInput">
-            <option value="Published">Published</option>
-            <option value="Draft">Draft</option>
-          </select>
-        </label>
+        <div id="quizModalCategoryCreateRow" class="field">
+          <span>Category</span>
+          <div class="admin-category-inline-row">
+            <input id="quizModalCategoryCreateInput" type="text" maxlength="100" placeholder="Enter category name">
+            <button id="quizModalCategoryCreateButton" class="button button-secondary" type="button">Add Category</button>
+          </div>
+          <p id="quizModalCategoryCreateMessage" class="feedback-message" aria-live="polite"></p>
+        </div>
 
-        <div class="recent-history-block admin-details-block">
+        <div id="quizModalQuestionsBlock" class="recent-history-block admin-details-block">
           <p class="panel-label">Questions</p>
+          <p id="quizModalQuestionsMessage" class="feedback-message" aria-live="polite"></p>
           <div id="quizModalQuestionRow" class="admin-question-row"></div>
         </div>
 
         <div class="editor-actions">
-          <button class="button" type="submit">Save quiz</button>
-          <button id="publishQuizButton" class="button button-secondary" type="button">Publish quiz</button>
-          <button id="deleteQuizButton" class="button button-secondary" type="button">Delete quiz</button>
+          <button id="deleteQuizButton" class="button button-danger-outline" type="button">Delete category</button>
         </div>
       </form>
+    </section>
+  </div>
+
+  <div id="addCategoryModal" class="quiz-modal" hidden>
+    <div class="quiz-modal-backdrop" data-close-add-category="true"></div>
+    <section class="quiz-modal-dialog admin-add-category-dialog" role="dialog" aria-modal="true" aria-labelledby="addCategoryModalTitle">
+      <div class="quiz-modal-header">
+        <div>
+          <p class="eyebrow">Quiz Editor</p>
+          <h2 id="addCategoryModalTitle">Add Category</h2>
+        </div>
+        <button id="closeAddCategoryModalButton" class="button button-ghost" type="button">Close</button>
+      </div>
+
+      <form id="addCategoryForm" class="form-stack" novalidate>
+        <label class="field">
+          <span>Category name</span>
+          <input id="addCategoryNameInput" type="text" maxlength="100" required>
+        </label>
+        <p id="addCategoryMessage" class="feedback-message" aria-live="polite"></p>
+
+        <div class="editor-actions">
+          <button id="addCategorySubmitButton" class="button" type="submit">Add category</button>
+          <button id="cancelAddCategoryButton" class="button button-secondary" type="button">Cancel</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="confirmModal" class="quiz-modal" hidden>
+    <div id="confirmModalBackdrop" class="quiz-modal-backdrop"></div>
+    <section class="quiz-modal-dialog admin-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="quiz-modal-header">
+        <div>
+          <p class="eyebrow">Confirm Action</p>
+          <h2 id="confirmModalTitle">Delete category?</h2>
+        </div>
+      </div>
+
+      <p id="confirmModalMessage" class="recent-result-meta admin-confirm-message"></p>
+
+      <div class="editor-actions">
+        <button id="confirmModalCancelButton" class="button button-secondary" type="button">Cancel</button>
+        <button id="confirmModalOkButton" class="button button-danger-outline" type="button">Delete</button>
+      </div>
     </section>
   </div>
 

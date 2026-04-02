@@ -15,6 +15,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
     private readonly string _categoriesTable;
     private readonly string _questionsTable;
     private readonly string _individualAnswersTable;
+    private readonly string _moderatedAnswersTable;
     private readonly string _usersTable;
     private readonly string _rolesTable;
 
@@ -25,8 +26,51 @@ public sealed class OdbcQuizDataService : IQuizDataService
         _categoriesTable = ResolveTableName(value.CategoriesTableName, "CATEGORIES");
         _questionsTable = ResolveTableName(value.QuestionsTableName, "QUESTIONS");
         _individualAnswersTable = ResolveTableName(value.IndividualAnswersTableName, "INDIVIDUAL_ANSWERS");
+        _moderatedAnswersTable = ResolveTableName(value.ModeratedAnswersTableName, "MODERATED_ANSWERS");
         _usersTable = ResolveTableName(value.UsersTableName, "USERS");
         _rolesTable = ResolveTableName(value.RolesTableName, "ROLES");
+    }
+
+    public async Task<string> CreateCategoryAsync(string categoryName)
+    {
+        var normalized = categoryName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Category name is required.", nameof(categoryName));
+        }
+
+        using var connection = CreateConnection();
+        await connection.OpenAsync();
+
+        using (var exists = connection.CreateCommand())
+        {
+            exists.CommandText = $"""
+                SELECT NAME
+                FROM {_categoriesTable}
+                WHERE LOWER(NAME) = LOWER(?)
+                FETCH FIRST 1 ROWS ONLY
+                """;
+            exists.Parameters.Add(new OdbcParameter { Value = normalized });
+
+            var value = await exists.ExecuteScalarAsync();
+            if (value != null && value != DBNull.Value)
+            {
+                throw new DuplicateCategoryException($"Category name \"{normalized}\" already exists.");
+            }
+        }
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = $"""
+                INSERT INTO {_categoriesTable} (NAME, DISPLAY_ORDER)
+                VALUES (?, ?)
+                """;
+            command.Parameters.Add(new OdbcParameter { Value = normalized });
+            command.Parameters.Add(new OdbcParameter { Value = 0 });
+            await command.ExecuteNonQueryAsync();
+        }
+
+        return normalized;
     }
 
     public async Task<IReadOnlyList<QuizDto>> GetQuizzesAsync()
@@ -75,6 +119,34 @@ public sealed class OdbcQuizDataService : IQuizDataService
 
         var title = quiz.Title.Trim();
         var description = quiz.Description.Trim();
+        long categoryId;
+
+        using (var existing = connection.CreateCommand())
+        {
+            existing.CommandText = $"""
+                SELECT CATEGORY_ID
+                FROM {_categoriesTable}
+                WHERE LOWER(NAME) = LOWER({ToSqlStringLiteral(title)})
+                ORDER BY CATEGORY_ID DESC
+                FETCH FIRST 1 ROWS ONLY
+                """;
+
+            var existingId = await existing.ExecuteScalarAsync();
+            if (existingId != null && existingId != DBNull.Value)
+            {
+                categoryId = Convert.ToInt64(existingId);
+                var existingQuestions = await LoadQuestionsAsync(connection, categoryId);
+                var byCategory = new Dictionary<long, List<QuestionRow>> { [categoryId] = existingQuestions };
+
+                var existingCategory = new CategoryRow
+                {
+                    CategoryId = categoryId,
+                    Name = title
+                };
+
+                return ToQuizDto(existingCategory, byCategory);
+            }
+        }
 
         using (var command = connection.CreateCommand())
         {
@@ -88,7 +160,6 @@ public sealed class OdbcQuizDataService : IQuizDataService
             await command.ExecuteNonQueryAsync();
         }
 
-        long categoryId;
         using (var query = connection.CreateCommand())
         {
             query.CommandText = $"""
@@ -127,18 +198,38 @@ public sealed class OdbcQuizDataService : IQuizDataService
             return null;
         }
 
+        var normalizedName = (quiz.Category ?? quiz.Title)?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return null;
+        }
+
         using var connection = CreateConnection();
         await connection.OpenAsync();
+
+        using (var duplicateCheck = connection.CreateCommand())
+        {
+            duplicateCheck.CommandText = $"""
+                SELECT 1
+                FROM {_categoriesTable}
+                WHERE LOWER(NAME) = LOWER({ToSqlStringLiteral(normalizedName)})
+                  AND CATEGORY_ID <> {categoryId}
+                FETCH FIRST 1 ROWS ONLY
+                """;
+
+            var duplicate = await duplicateCheck.ExecuteScalarAsync();
+            if (duplicate != null && duplicate != DBNull.Value)
+            {
+                throw new DuplicateCategoryException($"Category name \"{normalizedName}\" already exists.");
+            }
+        }
 
         using var command = connection.CreateCommand();
         command.CommandText = $"""
             UPDATE {_categoriesTable}
-            SET NAME = ?, DESCRIPTION = ?, UPDATED_AT = CURRENT_TIMESTAMP
-            WHERE CATEGORY_ID = ?
+            SET NAME = {ToSqlStringLiteral(normalizedName)}, UPDATED_AT = CURRENT_TIMESTAMP
+            WHERE CATEGORY_ID = {categoryId}
             """;
-        command.Parameters.Add(new OdbcParameter { Value = quiz.Title.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = quiz.Description.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = categoryId });
 
         var affected = await command.ExecuteNonQueryAsync();
         if (affected <= 0)
@@ -160,26 +251,52 @@ public sealed class OdbcQuizDataService : IQuizDataService
         await connection.OpenAsync();
         using var transaction = connection.BeginTransaction();
 
-        await ExecuteNonQueryAsync(connection, transaction, $"""
+        using (var deleteAnswers = connection.CreateCommand())
+        {
+            deleteAnswers.Transaction = transaction;
+            deleteAnswers.CommandText = $"""
             DELETE FROM {_individualAnswersTable}
-            WHERE QUESTION_ID IN (SELECT QUESTION_ID FROM {_questionsTable} WHERE CATEGORY_ID = ?)
-            """, categoryId);
+            WHERE QUESTION_ID IN (SELECT QUESTION_ID FROM {_questionsTable} WHERE CATEGORY_ID = {categoryId})
+            """;
+            await deleteAnswers.ExecuteNonQueryAsync();
+        }
 
-        await ExecuteNonQueryAsync(connection, transaction, $"""
+        using (var deleteModeratedAnswers = connection.CreateCommand())
+        {
+            deleteModeratedAnswers.Transaction = transaction;
+            deleteModeratedAnswers.CommandText = $"""
+            DELETE FROM {_moderatedAnswersTable}
+            WHERE QUESTION_ID IN (SELECT QUESTION_ID FROM {_questionsTable} WHERE CATEGORY_ID = {categoryId})
+            """;
+            await deleteModeratedAnswers.ExecuteNonQueryAsync();
+        }
+
+        using (var deleteQuestions = connection.CreateCommand())
+        {
+            deleteQuestions.Transaction = transaction;
+            deleteQuestions.CommandText = $"""
             DELETE FROM {_questionsTable}
-            WHERE CATEGORY_ID = ?
-            """, categoryId);
+            WHERE CATEGORY_ID = {categoryId}
+            """;
+            await deleteQuestions.ExecuteNonQueryAsync();
+        }
 
-        var deleted = await ExecuteNonQueryAsync(connection, transaction, $"""
+        int deleted;
+        using (var deleteCategory = connection.CreateCommand())
+        {
+            deleteCategory.Transaction = transaction;
+            deleteCategory.CommandText = $"""
             DELETE FROM {_categoriesTable}
-            WHERE CATEGORY_ID = ?
-            """, categoryId);
+            WHERE CATEGORY_ID = {categoryId}
+            """;
+            deleted = await deleteCategory.ExecuteNonQueryAsync();
+        }
 
         transaction.Commit();
         return deleted > 0;
     }
 
-    public async Task<QuestionDto?> CreateQuestionAsync(Guid quizId, QuestionDto question)
+    public async Task<QuestionDto?> CreateQuestionAsync(Guid quizId, QuestionDto question, string userId, string userEmail)
     {
         if (!TryGuidToNumber(quizId, out var categoryId))
         {
@@ -189,16 +306,20 @@ public sealed class OdbcQuizDataService : IQuizDataService
         using var connection = CreateConnection();
         await connection.OpenAsync();
 
-        var categoryExists = await ExistsAsync(connection, null, $"SELECT 1 FROM {_categoriesTable} WHERE CATEGORY_ID = ?", categoryId);
-        if (!categoryExists)
+        using (var categoryCheck = connection.CreateCommand())
         {
-            return null;
+            categoryCheck.CommandText = $"SELECT 1 FROM {_categoriesTable} WHERE CATEGORY_ID = {categoryId}";
+            var categoryExists = await categoryCheck.ExecuteScalarAsync();
+            if (categoryExists == null || categoryExists == DBNull.Value)
+            {
+                return null;
+            }
         }
 
-        var questionId = await GetNextIdAsync(connection, _questionsTable, "QUESTION_ID");
         var options = BuildOptions(question.Options);
         var correctIndex = NormalizeCorrectOptionIndex(question.CorrectOptionIndex, options.Count);
-        var uploaderId = await ResolveUploaderUserIdAsync(connection);
+        var uploaderId = await ResolveUploaderUserIdAsync(connection, userId, userEmail);
+        var points = Math.Max(question.Points, 1);
 
         var mediaMeta = JsonSerializer.Serialize(new MediaMeta
         {
@@ -210,21 +331,41 @@ public sealed class OdbcQuizDataService : IQuizDataService
         using var command = connection.CreateCommand();
         command.CommandText = $"""
             INSERT INTO {_questionsTable}
-                (QUESTION_ID, CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY, POINTS, UPLOADED_BY, CREATED_AT, UPDATED_AT)
+                (CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY, POINTS, UPLOADED_BY, CREATED_AT, UPDATED_AT)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ({categoryId},
+                 TO_CLOB({ToSqlStringLiteral(mediaMeta)}),
+                 {ToSqlNullableStringLiteral(question.MediaUrl.Trim())},
+                 TO_CLOB({ToSqlStringLiteral(question.Text.Trim())}),
+                 TO_CLOB({ToSqlStringLiteral(JsonSerializer.Serialize(options, JsonOptions))}),
+                 {ToSqlStringLiteral(IndexToAnswerKey(correctIndex))},
+                 {points},
+                 {uploaderId},
+                 CURRENT_TIMESTAMP,
+                 CURRENT_TIMESTAMP)
             """;
-        command.Parameters.Add(new OdbcParameter { Value = questionId });
-        command.Parameters.Add(new OdbcParameter { Value = categoryId });
-        command.Parameters.Add(new OdbcParameter { Value = mediaMeta });
-        command.Parameters.Add(new OdbcParameter { Value = question.MediaUrl.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = question.Text.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = JsonSerializer.Serialize(options, JsonOptions) });
-        command.Parameters.Add(new OdbcParameter { Value = IndexToAnswerKey(correctIndex) });
-        command.Parameters.Add(new OdbcParameter { Value = 1 });
-        command.Parameters.Add(new OdbcParameter { Value = uploaderId });
 
         await command.ExecuteNonQueryAsync();
+
+        long questionId;
+        using (var query = connection.CreateCommand())
+        {
+            query.CommandText = $"""
+                SELECT QUESTION_ID
+                FROM {_questionsTable}
+                WHERE CATEGORY_ID = {categoryId}
+                  AND UPLOADED_BY = {uploaderId}
+                ORDER BY QUESTION_ID DESC
+                FETCH FIRST 1 ROWS ONLY
+                """;
+            var result = await query.ExecuteScalarAsync();
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException("Question inserted but QUESTION_ID could not be resolved.");
+            }
+
+            questionId = Convert.ToInt64(result);
+        }
 
         return new QuestionDto
         {
@@ -234,7 +375,8 @@ public sealed class OdbcQuizDataService : IQuizDataService
             MediaUrl = question.MediaUrl.Trim(),
             MediaPrompt = question.MediaPrompt.Trim(),
             Options = options,
-            CorrectOptionIndex = correctIndex
+            CorrectOptionIndex = correctIndex,
+            Points = points
         };
     }
 
@@ -248,14 +390,19 @@ public sealed class OdbcQuizDataService : IQuizDataService
         using var connection = CreateConnection();
         await connection.OpenAsync();
 
-        var exists = await ExistsAsync(connection, null, $"SELECT 1 FROM {_questionsTable} WHERE QUESTION_ID = ?", numericQuestionId);
-        if (!exists)
+        using (var questionCheck = connection.CreateCommand())
         {
-            return null;
+            questionCheck.CommandText = $"SELECT 1 FROM {_questionsTable} WHERE QUESTION_ID = {numericQuestionId}";
+            var exists = await questionCheck.ExecuteScalarAsync();
+            if (exists == null || exists == DBNull.Value)
+            {
+                return null;
+            }
         }
 
         var options = BuildOptions(question.Options);
         var correctIndex = NormalizeCorrectOptionIndex(question.CorrectOptionIndex, options.Count);
+        var points = Math.Max(question.Points, 1);
 
         var mediaMeta = JsonSerializer.Serialize(new MediaMeta
         {
@@ -267,20 +414,15 @@ public sealed class OdbcQuizDataService : IQuizDataService
         using var command = connection.CreateCommand();
         command.CommandText = $"""
             UPDATE {_questionsTable}
-            SET XML_QUESTION = ?,
-                YOUTUBE_URL = ?,
-                QUESTION_TEXT = ?,
-                ANSWERS_OPTION = ?,
-                ANSWERS_KEY = ?,
+            SET XML_QUESTION = TO_CLOB({ToSqlStringLiteral(mediaMeta)}),
+                YOUTUBE_URL = {ToSqlNullableStringLiteral(question.MediaUrl.Trim())},
+                QUESTION_TEXT = TO_CLOB({ToSqlStringLiteral(question.Text.Trim())}),
+                ANSWERS_OPTION = TO_CLOB({ToSqlStringLiteral(JsonSerializer.Serialize(options, JsonOptions))}),
+                ANSWERS_KEY = {ToSqlStringLiteral(IndexToAnswerKey(correctIndex))},
+                POINTS = {points},
                 UPDATED_AT = CURRENT_TIMESTAMP
-            WHERE QUESTION_ID = ?
+            WHERE QUESTION_ID = {numericQuestionId}
             """;
-        command.Parameters.Add(new OdbcParameter { Value = mediaMeta });
-        command.Parameters.Add(new OdbcParameter { Value = question.MediaUrl.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = question.Text.Trim() });
-        command.Parameters.Add(new OdbcParameter { Value = JsonSerializer.Serialize(options, JsonOptions) });
-        command.Parameters.Add(new OdbcParameter { Value = IndexToAnswerKey(correctIndex) });
-        command.Parameters.Add(new OdbcParameter { Value = numericQuestionId });
 
         await command.ExecuteNonQueryAsync();
 
@@ -292,7 +434,8 @@ public sealed class OdbcQuizDataService : IQuizDataService
             MediaUrl = question.MediaUrl.Trim(),
             MediaPrompt = question.MediaPrompt.Trim(),
             Options = options,
-            CorrectOptionIndex = correctIndex
+            CorrectOptionIndex = correctIndex,
+            Points = points
         };
     }
 
@@ -307,15 +450,26 @@ public sealed class OdbcQuizDataService : IQuizDataService
         await connection.OpenAsync();
         using var transaction = connection.BeginTransaction();
 
-        await ExecuteNonQueryAsync(connection, transaction, $"""
+        using (var deleteAnswers = connection.CreateCommand())
+        {
+            deleteAnswers.Transaction = transaction;
+            deleteAnswers.CommandText = $"""
             DELETE FROM {_individualAnswersTable}
-            WHERE QUESTION_ID = ?
-            """, numericQuestionId);
+            WHERE QUESTION_ID = {numericQuestionId}
+            """;
+            await deleteAnswers.ExecuteNonQueryAsync();
+        }
 
-        var removed = await ExecuteNonQueryAsync(connection, transaction, $"""
+        int removed;
+        using (var deleteQuestion = connection.CreateCommand())
+        {
+            deleteQuestion.Transaction = transaction;
+            deleteQuestion.CommandText = $"""
             DELETE FROM {_questionsTable}
-            WHERE QUESTION_ID = ?
-            """, numericQuestionId);
+            WHERE QUESTION_ID = {numericQuestionId}
+            """;
+            removed = await deleteQuestion.ExecuteNonQueryAsync();
+        }
 
         transaction.Commit();
         return removed > 0;
@@ -512,16 +666,15 @@ public sealed class OdbcQuizDataService : IQuizDataService
         if (categoryId.HasValue)
         {
             command.CommandText = $"""
-                SELECT CATEGORY_ID, NAME, DESCRIPTION
+                SELECT CATEGORY_ID, NAME
                 FROM {_categoriesTable}
-                WHERE CATEGORY_ID = ?
+                WHERE CATEGORY_ID = {categoryId.Value}
                 """;
-            command.Parameters.Add(new OdbcParameter { Value = categoryId.Value });
         }
         else
         {
             command.CommandText = $"""
-                SELECT CATEGORY_ID, NAME, DESCRIPTION
+                SELECT CATEGORY_ID, NAME
                 FROM {_categoriesTable}
                 """;
         }
@@ -532,8 +685,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
             rows.Add(new CategoryRow
             {
                 CategoryId = ReadLong(reader, "CATEGORY_ID"),
-                Name = ReadString(reader, "NAME"),
-                Description = ReadString(reader, "DESCRIPTION")
+                Name = ReadString(reader, "NAME")
             });
         }
 
@@ -548,17 +700,16 @@ public sealed class OdbcQuizDataService : IQuizDataService
         if (categoryId.HasValue)
         {
             command.CommandText = $"""
-                SELECT QUESTION_ID, CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY
+                SELECT QUESTION_ID, CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY, POINTS
                 FROM {_questionsTable}
-                WHERE CATEGORY_ID = ?
+                WHERE CATEGORY_ID = {categoryId.Value}
                 ORDER BY QUESTION_ID
                 """;
-            command.Parameters.Add(new OdbcParameter { Value = categoryId.Value });
         }
         else
         {
             command.CommandText = $"""
-                SELECT QUESTION_ID, CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY
+                SELECT QUESTION_ID, CATEGORY_ID, XML_QUESTION, YOUTUBE_URL, QUESTION_TEXT, ANSWERS_OPTION, ANSWERS_KEY, POINTS
                 FROM {_questionsTable}
                 ORDER BY QUESTION_ID
                 """;
@@ -575,7 +726,8 @@ public sealed class OdbcQuizDataService : IQuizDataService
                 YoutubeUrl = ReadString(reader, "YOUTUBE_URL"),
                 QuestionText = ReadString(reader, "QUESTION_TEXT"),
                 AnswersOption = ReadString(reader, "ANSWERS_OPTION"),
-                AnswersKey = ReadString(reader, "ANSWERS_KEY")
+                AnswersKey = ReadString(reader, "ANSWERS_KEY"),
+                Points = ReadInt(reader, "POINTS")
             });
         }
 
@@ -605,8 +757,14 @@ public sealed class OdbcQuizDataService : IQuizDataService
         );
     }
 
-    private async Task<long> ResolveUploaderUserIdAsync(OdbcConnection connection)
+    private async Task<long> ResolveUploaderUserIdAsync(OdbcConnection connection, string userId, string userEmail)
     {
+        var currentUserId = await ResolveUserIdAsync(connection, userId, userEmail);
+        if (currentUserId > 0)
+        {
+            return currentUserId;
+        }
+
         using var adminCommand = connection.CreateCommand();
         adminCommand.CommandText = $"""
             SELECT u.USER_ID
@@ -661,34 +819,6 @@ public sealed class OdbcQuizDataService : IQuizDataService
         return Convert.ToInt64(value);
     }
 
-    private async Task<bool> ExistsAsync(OdbcConnection connection, OdbcTransaction? transaction, string sql, params object[] parameters)
-    {
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = sql;
-        foreach (var parameter in parameters)
-        {
-            command.Parameters.Add(new OdbcParameter { Value = parameter });
-        }
-
-        var result = await command.ExecuteScalarAsync();
-        return result != null && result != DBNull.Value;
-    }
-
-    private async Task<int> ExecuteNonQueryAsync(OdbcConnection connection, OdbcTransaction transaction, string sql, params object[] parameters)
-    {
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = sql;
-
-        foreach (var parameter in parameters)
-        {
-            command.Parameters.Add(new OdbcParameter { Value = parameter });
-        }
-
-        return await command.ExecuteNonQueryAsync();
-    }
-
     private static QuizDto ToQuizDto(CategoryRow category, Dictionary<long, List<QuestionRow>> questionsByCategory)
     {
         var questions = questionsByCategory.TryGetValue(category.CategoryId, out var rows)
@@ -719,7 +849,8 @@ public sealed class OdbcQuizDataService : IQuizDataService
             MediaUrl = string.IsNullOrWhiteSpace(media.MediaUrl) ? row.YoutubeUrl : media.MediaUrl,
             MediaPrompt = media.MediaPrompt,
             Options = options,
-            CorrectOptionIndex = AnswerKeyToIndex(row.AnswersKey)
+            CorrectOptionIndex = AnswerKeyToIndex(row.AnswersKey),
+            Points = Math.Max(row.Points, 1)
         };
     }
 
@@ -844,6 +975,17 @@ public sealed class OdbcQuizDataService : IQuizDataService
         return string.IsNullOrWhiteSpace(configured) ? fallback : configured.Trim();
     }
 
+    private static string ToSqlStringLiteral(string value)
+    {
+        var normalized = value ?? string.Empty;
+        return $"'{normalized.Replace("'", "''")}'";
+    }
+
+    private static string ToSqlNullableStringLiteral(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "NULL" : ToSqlStringLiteral(value);
+    }
+
     private static string ReadString(DbDataReader reader, string column)
     {
         var value = reader[column];
@@ -921,6 +1063,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
         public string QuestionText { get; set; } = string.Empty;
         public string AnswersOption { get; set; } = string.Empty;
         public string AnswersKey { get; set; } = "A";
+        public int Points { get; set; } = 1;
     }
 
     private sealed class HistoryRow
