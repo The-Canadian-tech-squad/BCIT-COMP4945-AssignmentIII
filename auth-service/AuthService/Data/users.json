@@ -43,5 +43,14 @@
     "RemainingCalls": 20,
     "UsageCount": 0,
     "CreatedAtUtc": "2026-03-31T08:14:27.6122419Z"
+  },
+  {
+    "Id": "6ad514bc-b8fb-4f79-9304-a8dffe19c379",
+    "Email": "haven000@test.ca",
+    "PasswordHash": "\u002BejAA25rsvpD0fRnbK\u002Bcmg==:qKjPm73BVFx6oulfmjw\u002Bk6WdfG6xLOT5lG7YYgFbLcM=",
+    "Role": "admin",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-04-02T02:26:01.634078Z"
   }
 ]

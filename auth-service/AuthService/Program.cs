@@ -17,12 +17,40 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection(FileStorageOptions.SectionName));
+builder.Services.Configure<OracleOdbcOptions>(builder.Configuration.GetSection(OracleOdbcOptions.SectionName));
+
+var oracleOptions = builder.Configuration
+    .GetSection(OracleOdbcOptions.SectionName)
+    .Get<OracleOdbcOptions>() ?? new OracleOdbcOptions();
+
+var oracleConnectionString = Environment.GetEnvironmentVariable("ORACLE_ODBC_CONNECTION_STRING");
+if (string.IsNullOrWhiteSpace(oracleConnectionString))
+{
+    oracleConnectionString = oracleOptions.ConnectionString;
+}
 
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-if (!string.IsNullOrWhiteSpace(connectionString))
+var useOracleOdbc = oracleOptions.Enabled || !string.IsNullOrWhiteSpace(oracleConnectionString);
+var usePostgres = false;
+
+if (useOracleOdbc)
 {
+    if (string.IsNullOrWhiteSpace(oracleConnectionString))
+    {
+        throw new InvalidOperationException("Oracle ODBC is enabled but no connection string was provided.");
+    }
+
+    builder.Services.PostConfigure<OracleOdbcOptions>(options =>
+    {
+        options.ConnectionString = oracleConnectionString!;
+    });
+    builder.Services.AddScoped<IUserRepository, OdbcUserRepository>();
+}
+else if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    usePostgres = true;
     if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
     {
         connectionString = ConvertPostgresUrl(connectionString);
@@ -114,7 +142,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-if (!string.IsNullOrWhiteSpace(connectionString))
+if (usePostgres && !string.IsNullOrWhiteSpace(connectionString))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

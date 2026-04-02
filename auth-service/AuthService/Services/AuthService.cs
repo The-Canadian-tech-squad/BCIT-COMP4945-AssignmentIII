@@ -46,9 +46,7 @@ public sealed class AuthService : IAuthService
         {
             Email = normalizedEmail,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = normalizedRole,
-            RemainingCalls = 20,
-            UsageCount = 0
+            Role = normalizedRole
         };
 
         await _userRepository.AddAsync(user);
@@ -89,37 +87,6 @@ public sealed class AuthService : IAuthService
         return ServiceResult<CurrentUserResponseDto>.Ok(ToCurrentUserDto(user), _messageProvider.Get("CurrentUserLoaded"));
     }
 
-    public async Task<ServiceResult<UsageResponseDto>> GetUsageAsync(ClaimsPrincipal principal)
-    {
-        var user = await ResolveUserAsync(principal);
-        if (user == null)
-        {
-            return ServiceResult<UsageResponseDto>.Fail(_messageProvider.Get("Unauthorized"), StatusCodes.Status401Unauthorized);
-        }
-
-        return ServiceResult<UsageResponseDto>.Ok(ToUsageDto(user, _messageProvider.Get("UsageLoaded")));
-    }
-
-    public async Task<ServiceResult<UsageResponseDto>> DecrementUsageAsync(ClaimsPrincipal principal)
-    {
-        var user = await ResolveUserAsync(principal);
-        if (user == null)
-        {
-            return ServiceResult<UsageResponseDto>.Fail(_messageProvider.Get("Unauthorized"), StatusCodes.Status401Unauthorized);
-        }
-
-        if (user.RemainingCalls <= 0)
-        {
-            return ServiceResult<UsageResponseDto>.Fail(_messageProvider.Get("UsageLimitReached"), StatusCodes.Status403Forbidden);
-        }
-
-        user.RemainingCalls -= 1;
-        user.UsageCount += 1;
-        await _userRepository.UpdateAsync(user);
-
-        return ServiceResult<UsageResponseDto>.Ok(ToUsageDto(user, _messageProvider.Get("UsageDecremented")));
-    }
-
     public async Task<ServiceResult<IReadOnlyList<AdminUserRowDto>>> GetAdminUsersAsync(ClaimsPrincipal principal)
     {
         var user = await ResolveUserAsync(principal);
@@ -139,9 +106,7 @@ public sealed class AuthService : IAuthService
             .Select(record => new AdminUserRowDto
             {
                 Email = record.Email,
-                Role = record.Role,
-                RemainingCalls = record.RemainingCalls,
-                UsageCount = record.UsageCount
+                Role = record.Role
             })
             .ToList();
 
@@ -157,15 +122,7 @@ public sealed class AuthService : IAuthService
     private static CurrentUserResponseDto ToCurrentUserDto(UserRecord user) => new()
     {
         Email = user.Email,
-        Role = user.Role,
-        RemainingCalls = user.RemainingCalls
-    };
-
-    private static UsageResponseDto ToUsageDto(UserRecord user, string message) => new()
-    {
-        RemainingCalls = user.RemainingCalls,
-        UsageCount = user.UsageCount,
-        Message = message
+        Role = user.Role
     };
 
     private static bool IsValidRegistration(string email, string password, string role)
