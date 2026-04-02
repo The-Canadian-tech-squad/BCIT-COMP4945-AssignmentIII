@@ -212,13 +212,17 @@ if (session) {
 
   async function initializeAdminDashboard() {
     const results = await Promise.allSettled([loadAdminQuizzes(), loadUserPerformance()]);
+    const quizServiceUnavailable = results[0].status === "rejected";
+    const performanceServiceUnavailable = results[1].status === "rejected";
+    const loadedEmptyQuizData = results[0].status === "fulfilled" && !quizzes.length;
+    const loadedEmptyPerformanceData = results[1].status === "fulfilled" && !userPerformanceItems.length;
 
-    if (results[0].status === "rejected" && !quizzes.length) {
+    if (quizServiceUnavailable && !quizzes.length) {
       quizzes = structuredClone(fallbackQuizzes);
       usingQuizFallback = true;
     }
 
-    if (results[1].status === "rejected" && !userPerformanceItems.length) {
+    if (performanceServiceUnavailable && !userPerformanceItems.length) {
       userPerformanceItems = structuredClone(fallbackPerformanceItems);
       usingPerformanceFallback = true;
     }
@@ -238,8 +242,10 @@ if (session) {
     renderQuizLibrary();
     renderUserPerformance();
 
-    if (usingQuizFallback || usingPerformanceFallback) {
+    if (quizServiceUnavailable || performanceServiceUnavailable) {
       setMessage(adminMessage, "The live quiz service is unavailable, so the admin dashboard is using local fallback data.", "error");
+    } else if (loadedEmptyQuizData || loadedEmptyPerformanceData) {
+      setMessage(adminMessage, "Quiz service is connected, but no quiz data exists in the database yet. Showing fallback sample data.", "error");
     } else {
       setMessage(adminMessage, "Quiz management data loaded from the quiz service.", "success");
     }

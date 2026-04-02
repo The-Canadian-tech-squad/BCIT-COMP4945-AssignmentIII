@@ -31,33 +31,4 @@ public class UsersController : ControllerBase
 
         return Ok(result.Data);
     }
-
-    [HttpGet("usage")]
-    [ProducesResponseType(typeof(UsageResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Usage()
-    {
-        var result = await _authService.GetUsageAsync(User);
-        if (!result.Success)
-        {
-            return StatusCode(result.StatusCode, new ErrorResponseDto { Message = result.Message });
-        }
-
-        return Ok(result.Data);
-    }
-
-    [HttpPost("decrement-usage")]
-    [ProducesResponseType(typeof(UsageResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DecrementUsage()
-    {
-        var result = await _authService.DecrementUsageAsync(User);
-        if (!result.Success)
-        {
-            return StatusCode(result.StatusCode, new ErrorResponseDto { Message = result.Message });
-        }
-
-        return Ok(result.Data);
-    }
 }

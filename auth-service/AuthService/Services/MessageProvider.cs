@@ -12,9 +12,6 @@ public sealed class MessageProvider : IMessageProvider
         ["InvalidCredentials"] = "Resources/Messages/invalid-credentials.txt",
         ["LoginSuccessful"] = "Resources/Messages/login-successful.txt",
         ["Unauthorized"] = "Resources/Messages/unauthorized.txt",
-        ["UsageDecremented"] = "Resources/Messages/usage-decremented.txt",
-        ["UsageLoaded"] = "Resources/Messages/usage-loaded.txt",
-        ["UsageLimitReached"] = "Resources/Messages/usage-limit-reached.txt",
         ["UsersLoaded"] = "Resources/Messages/users-loaded.txt",
         ["ValidationFailed"] = "Resources/Messages/validation-failed.txt"
     };
@@ -27,9 +24,6 @@ public sealed class MessageProvider : IMessageProvider
         ["InvalidCredentials"] = "Invalid email or password.",
         ["LoginSuccessful"] = "Login successful.",
         ["Unauthorized"] = "Unauthorized.",
-        ["UsageDecremented"] = "Usage decremented successfully.",
-        ["UsageLoaded"] = "Usage loaded successfully.",
-        ["UsageLimitReached"] = "Usage limit reached.",
         ["UsersLoaded"] = "Users loaded successfully.",
         ["ValidationFailed"] = "Validation failed."
     };

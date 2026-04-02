@@ -18,6 +18,18 @@ builder.Services.Configure<CorsOptions>(
 
 builder.Services.Configure<FileStorageOptions>(
     builder.Configuration.GetSection(FileStorageOptions.SectionName));
+builder.Services.Configure<OracleOdbcOptions>(
+    builder.Configuration.GetSection(OracleOdbcOptions.SectionName));
+
+var oracleOptions = builder.Configuration
+    .GetSection(OracleOdbcOptions.SectionName)
+    .Get<OracleOdbcOptions>() ?? new OracleOdbcOptions();
+
+var oracleConnectionString = Environment.GetEnvironmentVariable("ORACLE_ODBC_CONNECTION_STRING");
+if (string.IsNullOrWhiteSpace(oracleConnectionString))
+{
+    oracleConnectionString = oracleOptions.ConnectionString;
+}
 
 var jwtOptions = builder.Configuration
     .GetSection(JwtOptions.SectionName)
@@ -66,7 +78,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddSingleton<IQuizDataService, FileQuizDataService>();
+
+var useOracleOdbc = oracleOptions.Enabled || !string.IsNullOrWhiteSpace(oracleConnectionString);
+if (useOracleOdbc)
+{
+    if (string.IsNullOrWhiteSpace(oracleConnectionString))
+    {
+        throw new InvalidOperationException("Oracle ODBC is enabled but no connection string was provided.");
+    }
+
+    builder.Services.PostConfigure<OracleOdbcOptions>(options =>
+    {
+        options.ConnectionString = oracleConnectionString!;
+    });
+    builder.Services.AddScoped<IQuizDataService, OdbcQuizDataService>();
+}
+else
+{
+    builder.Services.AddSingleton<IQuizDataService, FileQuizDataService>();
+}
 
 var corsOptions = builder.Configuration
     .GetSection(CorsOptions.SectionName)

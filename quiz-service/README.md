@@ -2,28 +2,39 @@
 
 ASP.NET Core Web API for trivia categories, quizzes, questions, media playback, and moderated quiz sessions.
 
-## Current status
+## Current implementation
 
-This service is scaffolded as the new trivia-focused microservice.
-It currently includes:
-
-- a basic API project structure
 - JWT authentication wiring
 - CORS configuration
-- a health endpoint
-- a protected sample categories endpoint
-
-## Planned responsibilities
-
+- health endpoint
 - categories and quiz discovery
-- admin quiz CRUD
-- quiz play endpoints
-- auto-play quiz mode
-- moderated mode with web sockets
+- admin quiz/question CRUD endpoints
+- user quiz attempt and history endpoints
+- Oracle ODBC data service support (`OdbcQuizDataService`)
+- file-based fallback data service (`FileQuizDataService`)
 
 ## Local run
 
-1. Install the .NET 8 SDK/runtime.
+1. Install the .NET SDK/runtime.
 2. Go to `quiz-service/QuizService`.
 3. Run `dotnet restore`
 4. Run `dotnet run`
+
+## Oracle Autonomous DB (ODBC + Wallet)
+
+Set environment variables before starting:
+
+```bash
+export TNS_ADMIN="/path/to/unzipped/wallet"
+export ORACLE_ODBC_CONNECTION_STRING='Driver={Oracle 23 ODBC driver};Dbq=<service_name>;Uid=<username>;Pwd=<password>;'
+```
+
+Then run:
+
+```bash
+dotnet run --project "quiz-service/QuizService/QuizService.csproj"
+```
+
+Detailed setup and SQL tables:
+
+- `docs/oracle-odbc-setup.md`
