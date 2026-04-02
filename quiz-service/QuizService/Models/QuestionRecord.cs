@@ -9,4 +9,5 @@ public sealed class QuestionRecord
     public string MediaPrompt { get; set; } = string.Empty;
     public List<string> Options { get; set; } = [];
     public int CorrectOptionIndex { get; set; }
+    public int Points { get; set; } = 1;
 }

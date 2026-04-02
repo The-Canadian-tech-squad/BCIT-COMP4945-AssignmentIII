@@ -9,6 +9,7 @@ public sealed class OracleOdbcOptions
     public string CategoriesTableName { get; set; } = "CATEGORIES";
     public string QuestionsTableName { get; set; } = "QUESTIONS";
     public string IndividualAnswersTableName { get; set; } = "INDIVIDUAL_ANSWERS";
+    public string ModeratedAnswersTableName { get; set; } = "MODERATED_ANSWERS";
     public string UsersTableName { get; set; } = "USERS";
     public string RolesTableName { get; set; } = "ROLES";
 }

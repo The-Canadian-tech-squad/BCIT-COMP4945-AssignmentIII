@@ -24,6 +24,16 @@ export class QuizApiService {
     });
   }
 
+  async createCategory(token, payload) {
+    return this.httpClient.request(this.#buildUrl(AppConfig.endpoints.categories), {
+      method: "POST",
+      headers: this.#authHeaders(token),
+      body: JSON.stringify({
+        name: payload?.name?.trim?.() || ""
+      })
+    });
+  }
+
   async getQuizzesByCategory(token, categoryId) {
     return this.httpClient.request(this.#buildUrl(`${AppConfig.endpoints.categories}/${categoryId}/quizzes`), {
       method: "GET",

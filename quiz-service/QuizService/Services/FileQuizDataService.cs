@@ -25,6 +25,45 @@ public sealed class FileQuizDataService : IQuizDataService
             : Path.Combine(environment.ContentRootPath, options.QuizDataFilePath);
     }
 
+    public async Task<string> CreateCategoryAsync(string categoryName)
+    {
+        var normalized = categoryName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Category name is required.", nameof(categoryName));
+        }
+
+        await _mutex.WaitAsync();
+        try
+        {
+            var data = await LoadInternalAsync();
+            var existing = data.Quizzes
+                .FirstOrDefault(quiz => string.Equals(quiz.Category, normalized, StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                throw new DuplicateCategoryException($"Category name \"{normalized}\" already exists.");
+            }
+
+            data.Quizzes.Add(new QuizRecord
+            {
+                Id = Guid.NewGuid(),
+                Category = normalized,
+                Title = normalized,
+                Status = "Draft",
+                Description = string.Empty,
+                Questions = []
+            });
+
+            await SaveInternalAsync(data);
+            return normalized;
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
     public async Task<IReadOnlyList<QuizDto>> GetQuizzesAsync()
     {
         var data = await LoadAsync();
@@ -49,6 +88,13 @@ public sealed class FileQuizDataService : IQuizDataService
         try
         {
             var data = await LoadInternalAsync();
+            var existing = data.Quizzes.FirstOrDefault(entry =>
+                string.Equals(entry.Category, request.Category.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                return ToQuizDto(existing);
+            }
+
             var quiz = new QuizRecord
             {
                 Id = Guid.NewGuid(),
@@ -81,8 +127,17 @@ public sealed class FileQuizDataService : IQuizDataService
                 return null;
             }
 
+            var normalizedCategory = request.Category.Trim();
+            var duplicate = data.Quizzes.Any(entry =>
+                entry.Id != quizId &&
+                string.Equals(entry.Category, normalizedCategory, StringComparison.OrdinalIgnoreCase));
+            if (duplicate)
+            {
+                throw new DuplicateCategoryException($"Category name \"{normalizedCategory}\" already exists.");
+            }
+
             quiz.Title = request.Title.Trim();
-            quiz.Category = request.Category.Trim();
+            quiz.Category = normalizedCategory;
             quiz.Status = NormalizeStatus(request.Status);
             quiz.Description = request.Description.Trim();
 
@@ -117,7 +172,7 @@ public sealed class FileQuizDataService : IQuizDataService
         }
     }
 
-    public async Task<QuestionDto?> CreateQuestionAsync(Guid quizId, QuestionDto request)
+    public async Task<QuestionDto?> CreateQuestionAsync(Guid quizId, QuestionDto request, string userId, string userEmail)
     {
         await _mutex.WaitAsync();
         try
@@ -158,6 +213,7 @@ public sealed class FileQuizDataService : IQuizDataService
             question.MediaPrompt = request.MediaPrompt.Trim();
             question.Options = BuildOptions(request.Options);
             question.CorrectOptionIndex = NormalizeCorrectOptionIndex(request.CorrectOptionIndex, question.Options.Count);
+            question.Points = Math.Max(request.Points, 1);
 
             await SaveInternalAsync(data);
             return ToQuestionDto(question);
@@ -321,7 +377,8 @@ public sealed class FileQuizDataService : IQuizDataService
             MediaUrl = question.MediaUrl,
             MediaPrompt = question.MediaPrompt,
             Options = [.. question.Options],
-            CorrectOptionIndex = question.CorrectOptionIndex
+            CorrectOptionIndex = question.CorrectOptionIndex,
+            Points = question.Points
         };
     }
 
@@ -357,7 +414,8 @@ public sealed class FileQuizDataService : IQuizDataService
             MediaUrl = request.MediaUrl.Trim(),
             MediaPrompt = request.MediaPrompt.Trim(),
             Options = options,
-            CorrectOptionIndex = NormalizeCorrectOptionIndex(request.CorrectOptionIndex, options.Count)
+            CorrectOptionIndex = NormalizeCorrectOptionIndex(request.CorrectOptionIndex, options.Count),
+            Points = Math.Max(request.Points, 1)
         };
     }
 

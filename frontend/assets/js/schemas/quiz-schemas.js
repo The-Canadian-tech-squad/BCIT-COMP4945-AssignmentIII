@@ -65,7 +65,8 @@ export function normalizeQuestion(payload, index = 0) {
     mediaUrl: payload?.mediaUrl || "",
     mediaPrompt: payload?.mediaPrompt || "",
     options: normalizedOptions,
-    correctOptionIndex: toPositiveInteger(payload?.correctOptionIndex, 0)
+    correctOptionIndex: toPositiveInteger(payload?.correctOptionIndex, 0),
+    points: Math.max(toPositiveInteger(payload?.points, 1), 1)
   };
 }
 
@@ -158,7 +159,8 @@ export function createEmptyQuestionPayload() {
     mediaUrl: "",
     mediaPrompt: "",
     options: ["", "", "", ""],
-    correctOptionIndex: 0
+    correctOptionIndex: 0,
+    points: 1
   };
 }
 
@@ -182,7 +184,8 @@ export function buildQuestionUpsertPayload(payload) {
     mediaUrl: payload?.mediaUrl?.trim?.() || "",
     mediaPrompt: payload?.mediaPrompt?.trim?.() || "",
     options: normalizedOptions.map((option) => option.trim()),
-    correctOptionIndex: toPositiveInteger(payload?.correctOptionIndex, 0)
+    correctOptionIndex: toPositiveInteger(payload?.correctOptionIndex, 0),
+    points: Math.max(toPositiveInteger(payload?.points, 1), 1)
   };
 }
 

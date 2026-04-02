@@ -7,51 +7,6 @@ const sessionController = new SessionController();
 const quizApi = new QuizApiService();
 const session = sessionController.requireRole(AppConfig.roles.admin);
 
-const fallbackQuizzes = [
-  {
-    id: "44444444-4444-4444-4444-444444444444",
-    title: "40s Movie Quiz",
-    category: "40s Movies",
-    status: "Published",
-    description: "Classic black-and-white movie moments and stars.",
-    questions: [
-      { id: "44444444-4444-4444-4444-000000000001", text: "Which 1942 film stars Humphrey Bogart and Ingrid Bergman?", mediaType: "Video", mediaPrompt: "Black-and-white detective scene.", options: ["Casablanca", "Rebecca", "Citizen Kane", "Notorious"], correctIndex: 0 },
-      { id: "44444444-4444-4444-4444-000000000002", text: "Which classic movie features the line 'There is no place like home'?", mediaType: "Image", mediaPrompt: "Dorothy on the yellow brick road.", options: ["The Wizard of Oz", "Singin' in the Rain", "Fantasia", "Pinocchio"], correctIndex: 0 },
-      { id: "44444444-4444-4444-4444-000000000003", text: "That quote is most closely associated with which movie?", mediaType: "Audio", mediaPrompt: "Famous quote prompt.", options: ["Casablanca", "Laura", "Double Indemnity", "The Maltese Falcon"], correctIndex: 0 },
-      { id: "44444444-4444-4444-4444-000000000004", text: "Who is the star performer most associated with Singin' in the Rain?", mediaType: "Video", mediaPrompt: "Dance scene in the rain.", options: ["Gene Kelly", "Fred Astaire", "Jimmy Stewart", "Cary Grant"], correctIndex: 0 },
-      { id: "44444444-4444-4444-4444-000000000005", text: "What is the famous sled name revealed in Citizen Kane?", mediaType: "Image", mediaPrompt: "A sled in the snow.", options: ["Rosebud", "Silver", "Starlight", "Snowbell"], correctIndex: 0 }
-    ]
-  },
-  {
-    id: "55555555-5555-5555-5555-555555555555",
-    title: "50s Politics Quiz",
-    category: "50s Politics",
-    status: "Draft",
-    description: "Cold War headlines, presidents, and political moments.",
-    questions: [
-      { id: "55555555-5555-5555-5555-000000000001", text: "Who became U.S. president in 1953?", mediaType: "Video", mediaPrompt: "Inauguration crowd gathers in Washington.", options: ["Dwight D. Eisenhower", "Harry Truman", "John F. Kennedy", "Lyndon B. Johnson"], correctIndex: 0 },
-      { id: "55555555-5555-5555-5555-000000000002", text: "Eisenhower was famous for serving as what before becoming president?", mediaType: "Image", mediaPrompt: "Candidate in military uniform.", options: ["General", "Governor", "Judge", "Senator"], correctIndex: 0 },
-      { id: "55555555-5555-5555-5555-000000000003", text: "The 1950s were shaped by which global conflict?", mediaType: "Audio", mediaPrompt: "Radio bulletin about tensions.", options: ["The Cold War", "The Crimean War", "The Gulf War", "The Boer War"], correctIndex: 0 },
-      { id: "55555555-5555-5555-5555-000000000004", text: "Which senator was associated with anti-communist investigations?", mediaType: "Video", mediaPrompt: "Televised hearing room.", options: ["Joseph McCarthy", "Hubert Humphrey", "Barry Goldwater", "George McGovern"], correctIndex: 0 },
-      { id: "55555555-5555-5555-5555-000000000005", text: "What is the capital of the United States?", mediaType: "Quote", mediaPrompt: "Federal politics question.", options: ["Washington, D.C.", "New York City", "Boston", "Philadelphia"], correctIndex: 0 }
-    ]
-  },
-  {
-    id: "66666666-6666-6666-6666-666666666666",
-    title: "60s Products Quiz",
-    category: "60s Products",
-    status: "Published",
-    description: "Popular household brands, toys, and consumer products.",
-    questions: [
-      { id: "66666666-6666-6666-6666-000000000001", text: "Which drink was promoted as the beverage of astronauts?", mediaType: "Video", mediaPrompt: "Orange drink ad in a bright kitchen.", options: ["Tang", "Pepsi", "Ovaltine", "Fresca"], correctIndex: 0 },
-      { id: "66666666-6666-6666-6666-000000000002", text: "Which doll became a huge 1960s product?", mediaType: "Image", mediaPrompt: "Pink convertible and fashion doll.", options: ["Barbie", "Cabbage Patch Kid", "Beanie Baby", "Bratz"], correctIndex: 0 },
-      { id: "66666666-6666-6666-6666-000000000003", text: "Which cookware material became a popular selling point?", mediaType: "Audio", mediaPrompt: "Cheerful kitchen jingle.", options: ["Teflon", "Granite", "Copper Glass", "Cast Resin"], correctIndex: 0 },
-      { id: "66666666-6666-6666-6666-000000000004", text: "Which snack brand sells potato crisps in a can?", mediaType: "Image", mediaPrompt: "Cylindrical can on a grocery shelf.", options: ["Pringles", "Doritos", "Cheetos", "Bugles"], correctIndex: 0 },
-      { id: "66666666-6666-6666-6666-000000000005", text: "Which portable product symbolized convenience in the 1960s?", mediaType: "Video", mediaPrompt: "Portable radio beside a picnic blanket.", options: ["Transistor radio", "Laptop computer", "DVD player", "Smartphone"], correctIndex: 0 }
-    ]
-  }
-];
-
 const fallbackPerformanceItems = [
   {
     email: "test@test.com",
@@ -102,24 +57,35 @@ if (session) {
   const questionEditorForm = byId("questionEditorForm");
   const questionTextInput = byId("questionTextInput");
   const questionMediaTypeInput = byId("questionMediaTypeInput");
+  const questionMediaUrlInput = byId("questionMediaUrlInput");
   const questionMediaPromptInput = byId("questionMediaPromptInput");
+  const questionMediaPreview = byId("questionMediaPreview");
   const optionAInput = byId("optionAInput");
   const optionBInput = byId("optionBInput");
   const optionCInput = byId("optionCInput");
   const optionDInput = byId("optionDInput");
   const correctAnswerInput = byId("correctAnswerInput");
+  const questionPointsInput = byId("questionPointsInput");
   const deleteQuestionButton = byId("deleteQuestionButton");
   const quizModal = byId("quizModal");
   const closeQuizModalButton = byId("closeQuizModalButton");
   const quizModalTitle = byId("quizModalTitle");
   const quizMetaForm = byId("quizMetaForm");
-  const quizModalNameInput = byId("quizModalNameInput");
-  const quizModalCategoryInput = byId("quizModalCategoryInput");
-  const quizModalStatusInput = byId("quizModalStatusInput");
+  const quizModalCategorySelectRow = byId("quizModalCategorySelectRow");
+  const quizModalCategoryCreateRow = byId("quizModalCategoryCreateRow");
+  const quizModalCategoryCreateInput = byId("quizModalCategoryCreateInput");
+  const quizModalCategoryCreateButton = byId("quizModalCategoryCreateButton");
+  const quizModalCategoryCreateMessage = byId("quizModalCategoryCreateMessage");
+  const quizModalQuestionsBlock = byId("quizModalQuestionsBlock");
+  const quizModalQuestionsMessage = byId("quizModalQuestionsMessage");
   const quizModalQuestionRow = byId("quizModalQuestionRow");
-  const publishQuizButton = byId("publishQuizButton");
   const deleteQuizButton = byId("deleteQuizButton");
-
+  const confirmModal = byId("confirmModal");
+  const confirmModalBackdrop = byId("confirmModalBackdrop");
+  const confirmModalTitle = byId("confirmModalTitle");
+  const confirmModalMessage = byId("confirmModalMessage");
+  const confirmModalCancelButton = byId("confirmModalCancelButton");
+  const confirmModalOkButton = byId("confirmModalOkButton");
   let quizzes = [];
   let userPerformanceItems = [];
   let activeQuizId = "";
@@ -128,8 +94,10 @@ if (session) {
   let activeQuizPageIndex = 0;
   const quizPageSize = 3;
   let editingQuizMetaId = null;
-  let usingQuizFallback = false;
+  let creatingCategoryFromNewButton = false;
   let usingPerformanceFallback = false;
+  let pendingConfirmResolver = null;
+  let questionModalReturnTarget = "library";
 
   setText(currentAdminLabel, session.user.email || "Signed in admin");
   initializeAdminDashboard();
@@ -169,10 +137,10 @@ if (session) {
     renderQuizLibrary();
   });
 
-  closeQuestionModalButton.addEventListener("click", closeQuestionModal);
+  closeQuestionModalButton.addEventListener("click", handleQuestionModalCloseByUser);
   questionModal.addEventListener("click", (event) => {
     if (event.target instanceof HTMLElement && event.target.dataset.closeQuestion === "true") {
-      closeQuestionModal();
+      handleQuestionModalCloseByUser();
     }
   });
 
@@ -185,29 +153,34 @@ if (session) {
 
   quizMetaForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    await saveQuizMeta();
   });
 
-  publishQuizButton.addEventListener("click", async () => {
-    quizModalStatusInput.value = "Published";
-    await saveQuizMeta(true);
+  quizModalCategoryCreateButton.addEventListener("click", async () => {
+    await submitCategoryFromInlineInput();
   });
 
   deleteQuizButton.addEventListener("click", async () => {
     await deleteActiveQuiz();
   });
 
+  confirmModalBackdrop.addEventListener("click", () => resolveConfirmModal(false));
+  confirmModalCancelButton.addEventListener("click", () => resolveConfirmModal(false));
+  confirmModalOkButton.addEventListener("click", () => resolveConfirmModal(true));
+
   questionEditorForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await saveQuestion();
   });
+  questionMediaTypeInput.addEventListener("change", renderQuestionMediaPreview);
+  questionMediaUrlInput.addEventListener("input", renderQuestionMediaPreview);
+  questionMediaPromptInput.addEventListener("input", renderQuestionMediaPreview);
 
   deleteQuestionButton.addEventListener("click", async () => {
     await deleteQuestion();
   });
 
-  newQuizButton.addEventListener("click", async () => {
-    await createQuiz();
+  newQuizButton.addEventListener("click", () => {
+    openNewCategoryMode();
   });
 
   async function initializeAdminDashboard() {
@@ -217,19 +190,9 @@ if (session) {
     const loadedEmptyQuizData = results[0].status === "fulfilled" && !quizzes.length;
     const loadedEmptyPerformanceData = results[1].status === "fulfilled" && !userPerformanceItems.length;
 
-    if (quizServiceUnavailable && !quizzes.length) {
-      quizzes = structuredClone(fallbackQuizzes);
-      usingQuizFallback = true;
-    }
-
     if (performanceServiceUnavailable && !userPerformanceItems.length) {
       userPerformanceItems = structuredClone(fallbackPerformanceItems);
       usingPerformanceFallback = true;
-    }
-
-    if (!quizzes.length) {
-      quizzes = structuredClone(fallbackQuizzes);
-      usingQuizFallback = true;
     }
 
     if (!userPerformanceItems.length) {
@@ -242,10 +205,12 @@ if (session) {
     renderQuizLibrary();
     renderUserPerformance();
 
-    if (quizServiceUnavailable || performanceServiceUnavailable) {
-      setMessage(adminMessage, "The live quiz service is unavailable, so the admin dashboard is using local fallback data.", "error");
-    } else if (loadedEmptyQuizData || loadedEmptyPerformanceData) {
-      setMessage(adminMessage, "Quiz service is connected, but no quiz data exists in the database yet. Showing fallback sample data.", "error");
+    if (quizServiceUnavailable) {
+      setMessage(adminMessage, "Could not load categories from the quiz service. Please check service and database connection.", "error");
+    } else if (loadedEmptyQuizData) {
+      setMessage(adminMessage, "No categories yet. Click New Category to start adding your first category.", "success");
+    } else if (usingPerformanceFallback && (performanceServiceUnavailable || loadedEmptyPerformanceData)) {
+      setMessage(adminMessage, "Quiz data loaded from the database. User Score Summary is currently showing fallback sample data.", "error");
     } else {
       setMessage(adminMessage, "Quiz management data loaded from the quiz service.", "success");
     }
@@ -255,8 +220,7 @@ if (session) {
     const payload = await quizApi.getAdminQuizzes(session.token);
     const summaries = quizApi.normalizeQuizSummaries(payload);
     const detailPayloads = await Promise.all(summaries.map((quiz) => quizApi.getAdminQuiz(session.token, quiz.id)));
-    quizzes = detailPayloads.map((entry) => mapQuizDetail(quizApi.normalizeQuizDetail(entry)));
-    usingQuizFallback = false;
+    quizzes = mergeQuizzesByCategory(detailPayloads.map((entry) => mapQuizDetail(quizApi.normalizeQuizDetail(entry))));
   }
 
   async function loadUserPerformance() {
@@ -285,10 +249,6 @@ if (session) {
     quizAdminList.textContent = "";
 
     if (!quizzes.length) {
-      const emptyState = document.createElement("p");
-      emptyState.className = "recent-result-meta";
-      emptyState.textContent = "No quizzes are available yet.";
-      quizAdminList.appendChild(emptyState);
       previousQuizButton.hidden = true;
       nextQuizButton.hidden = true;
       return;
@@ -306,7 +266,7 @@ if (session) {
 
       const title = document.createElement("span");
       title.className = "quiz-category-title admin-quiz-title-button";
-      title.textContent = quiz.title;
+      title.textContent = quiz.category || quiz.title;
       title.tabIndex = 0;
       title.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -337,7 +297,7 @@ if (session) {
         questionButton.textContent = `Q${index + 1}`;
         questionButton.addEventListener("click", (event) => {
           event.stopPropagation();
-          openQuestionModal(quiz.id, index);
+          openQuestionModal(quiz.id, index, { returnTo: "library" });
         });
         questionRow.appendChild(questionButton);
       });
@@ -353,12 +313,7 @@ if (session) {
       questionRow.appendChild(addButton);
 
       content.append(title, meta, prompt, questionRow);
-
-      const status = document.createElement("span");
-      status.className = "quiz-category-score";
-      status.textContent = quiz.status;
-
-      card.append(content, status);
+      card.append(content);
       card.addEventListener("click", () => {
         openQuizModal(quiz.id);
       });
@@ -412,12 +367,13 @@ if (session) {
     }
   }
 
-  function openQuestionModal(quizId, questionIndex) {
+  function openQuestionModal(quizId, questionIndex, options = {}) {
     const quiz = quizzes.find((entry) => entry.id === quizId);
     if (!quiz) {
       return;
     }
 
+    questionModalReturnTarget = options.returnTo === "quiz-modal" ? "quiz-modal" : "library";
     activeQuizId = quizId;
     activeQuestionIndex = questionIndex;
     const question = quiz.questions[questionIndex];
@@ -426,43 +382,118 @@ if (session) {
     setText(questionModalTitle, `Question ${questionIndex + 1}`);
     questionTextInput.value = question.text;
     questionMediaTypeInput.value = question.mediaType;
+    questionMediaUrlInput.value = question.mediaUrl || "";
     questionMediaPromptInput.value = question.mediaPrompt;
     optionAInput.value = question.options[0] || "";
     optionBInput.value = question.options[1] || "";
     optionCInput.value = question.options[2] || "";
     optionDInput.value = question.options[3] || "";
     correctAnswerInput.value = String(question.correctIndex || 0);
+    questionPointsInput.value = String(Math.max(Number.parseInt(String(question.points ?? 1), 10) || 1, 1));
+    renderQuestionMediaPreview();
 
     questionModal.hidden = false;
     document.body.classList.add("modal-open");
   }
 
+  function isDraftQuestionId(questionId) {
+    return typeof questionId === "string" && questionId.startsWith("draft-question-");
+  }
+
   function closeQuestionModal() {
+    const quiz = quizzes.find((entry) => entry.id === activeQuizId);
+    if (quiz && activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length) {
+      const activeQuestion = quiz.questions[activeQuestionIndex];
+      if (activeQuestion && isDraftQuestionId(activeQuestion.id)) {
+        quiz.questions.splice(activeQuestionIndex, 1);
+        updateSummary();
+        renderQuizLibrary();
+      }
+    }
+
     questionModal.hidden = true;
     document.body.classList.remove("modal-open");
   }
 
-  function openQuizModal(quizId) {
+  function handleQuestionModalCloseByUser() {
+    const quiz = quizzes.find((entry) => entry.id === activeQuizId);
+    closeQuestionModal();
+
+    if (!quiz) {
+      return;
+    }
+
+    if (questionModalReturnTarget === "quiz-modal") {
+      openQuizModal(quiz.id);
+    }
+  }
+
+  function openQuizModal(quizId, options = {}) {
     const quiz = quizzes.find((entry) => entry.id === quizId);
     if (!quiz) {
       return;
     }
 
     editingQuizMetaId = quiz.id;
-    setText(quizModalTitle, quiz.title);
-    quizModalNameInput.value = quiz.title;
-    quizModalCategoryInput.value = quiz.category;
-    quizModalStatusInput.value = quiz.status;
-    publishQuizButton.hidden = quiz.status === "Published";
+    creatingCategoryFromNewButton = false;
+    setText(quizModalTitle, quiz.category || quiz.title || "Quiz");
+    quizModalCategorySelectRow.hidden = true;
+    quizModalCategoryCreateRow.hidden = false;
+    quizModalQuestionsBlock.hidden = false;
+    deleteQuizButton.hidden = false;
+    deleteQuizButton.disabled = false;
+    quizModalCategoryCreateInput.value = quiz.category || quiz.title || "";
+    setMessage(quizModalCategoryCreateMessage, "", "success");
+    if (options.questionsMessage) {
+      setMessage(quizModalQuestionsMessage, options.questionsMessage, "success");
+    } else {
+      setMessage(quizModalQuestionsMessage, "", "success");
+    }
+    quizModalCategoryCreateButton.textContent = "Rename Category";
+    quizModalCategoryCreateButton.disabled = false;
     renderQuizModalQuestions(quiz);
     quizModal.hidden = false;
     document.body.classList.add("modal-open");
+  }
+
+  function openNewCategoryMode() {
+    editingQuizMetaId = null;
+    creatingCategoryFromNewButton = true;
+    setText(quizModalTitle, "New Category");
+    quizModalCategorySelectRow.hidden = true;
+    quizModalCategoryCreateRow.hidden = false;
+    quizModalQuestionsBlock.hidden = false;
+    deleteQuizButton.hidden = false;
+    deleteQuizButton.disabled = true;
+    quizModalCategoryCreateInput.value = "";
+    setMessage(quizModalCategoryCreateMessage, "", "success");
+    setMessage(quizModalQuestionsMessage, "", "success");
+    quizModalCategoryCreateButton.textContent = "Add Category";
+    quizModalCategoryCreateButton.disabled = false;
+    renderNewCategoryQuestionRow();
+    quizModal.hidden = false;
+    document.body.classList.add("modal-open");
+    queueMicrotask(() => quizModalCategoryCreateInput.focus());
+  }
+
+  function renderNewCategoryQuestionRow() {
+    quizModalQuestionRow.textContent = "";
+    const addOnlyButton = document.createElement("button");
+    addOnlyButton.type = "button";
+    addOnlyButton.className = "admin-question-chip admin-add-chip";
+    addOnlyButton.textContent = "+";
+    addOnlyButton.addEventListener("click", () => {
+      setMessage(adminMessage, "Please add the category first, then use + to add questions.", "error");
+    });
+    quizModalQuestionRow.appendChild(addOnlyButton);
   }
 
   function closeQuizModal() {
     quizModal.hidden = true;
     document.body.classList.remove("modal-open");
     editingQuizMetaId = null;
+    creatingCategoryFromNewButton = false;
+    setMessage(quizModalQuestionsMessage, "", "success");
   }
 
   function renderQuizModalQuestions(quiz) {
@@ -487,7 +518,7 @@ if (session) {
       questionButton.textContent = `Q${index + 1}`;
       questionButton.addEventListener("click", () => {
         closeQuizModal();
-        openQuestionModal(quiz.id, index);
+        openQuestionModal(quiz.id, index, { returnTo: "quiz-modal" });
       });
       quizModalQuestionRow.appendChild(questionButton);
     });
@@ -502,48 +533,29 @@ if (session) {
     quizModalQuestionRow.appendChild(addButton);
   }
 
-  async function saveQuizMeta(forcePublish = false) {
-    const quiz = quizzes.find((entry) => entry.id === editingQuizMetaId);
-    if (!quiz) {
+  async function deleteActiveQuiz() {
+    if (creatingCategoryFromNewButton) {
+      setMessage(adminMessage, "Please add the category first.", "error");
       return;
     }
 
-    const payload = {
-      title: quizModalNameInput.value.trim() || quiz.title,
-      category: quizModalCategoryInput.value.trim() || quiz.category,
-      status: forcePublish ? "Published" : quizModalStatusInput.value,
-      description: quiz.description || ""
-    };
-
-    try {
-      const response = await quizApi.updateQuiz(session.token, quiz.id, payload);
-      const updated = mapQuizDetail(quizApi.normalizeQuizDetail(response));
-      replaceQuiz(updated);
-      usingQuizFallback = false;
-      setMessage(adminMessage, `${updated.title} saved successfully.`, "success");
-    } catch (error) {
-      quiz.title = payload.title;
-      quiz.category = payload.category;
-      quiz.status = payload.status;
-      setMessage(adminMessage, error.message || `${quiz.title} was updated locally because the quiz service is unavailable.`, "error");
-    }
-
-    updateSummary();
-    renderQuizLibrary();
-    closeQuizModal();
-  }
-
-  async function deleteActiveQuiz() {
     const quizIndex = quizzes.findIndex((entry) => entry.id === editingQuizMetaId);
     if (quizIndex < 0) {
       return;
     }
 
     const removedQuiz = quizzes[quizIndex];
+    const categoryName = removedQuiz.category || removedQuiz.title || "this category";
+    const shouldDelete = await showConfirmModal({
+      title: `Delete category "${categoryName}"?`,
+      message: "This will also delete all questions under this category."
+    });
+    if (!shouldDelete) {
+      return;
+    }
 
     try {
       await quizApi.deleteQuiz(session.token, removedQuiz.id);
-      usingQuizFallback = false;
     } catch (error) {
       setMessage(adminMessage, error.message || `${removedQuiz.title} was removed locally because the quiz service is unavailable.`, "error");
     }
@@ -567,10 +579,13 @@ if (session) {
     }
 
     const question = quiz.questions[activeQuestionIndex];
+    const questionNumber = activeQuestionIndex + 1;
+    let questionResultMessage = "";
+    const isDraftQuestion = isDraftQuestionId(question.id);
     const payload = {
       text: questionTextInput.value.trim(),
       mediaType: questionMediaTypeInput.value,
-      mediaUrl: "",
+      mediaUrl: questionMediaUrlInput.value.trim(),
       mediaPrompt: questionMediaPromptInput.value.trim(),
       options: [
         optionAInput.value.trim(),
@@ -578,28 +593,46 @@ if (session) {
         optionCInput.value.trim(),
         optionDInput.value.trim()
       ],
-      correctOptionIndex: Number.parseInt(correctAnswerInput.value, 10) || 0
+      correctOptionIndex: Number.parseInt(correctAnswerInput.value, 10) || 0,
+      points: Math.max(Number.parseInt(questionPointsInput.value, 10) || 1, 1)
     };
 
-    try {
-      const response = await quizApi.updateQuestion(session.token, question.id, payload);
-      quiz.questions[activeQuestionIndex] = mapQuestion(quiz.questions[activeQuestionIndex].id, response);
-      usingQuizFallback = false;
-      setMessage(adminMessage, `${quiz.title} question ${activeQuestionIndex + 1} saved.`, "success");
-    } catch (error) {
-      quiz.questions[activeQuestionIndex] = {
-        ...quiz.questions[activeQuestionIndex],
-        text: payload.text,
-        mediaType: payload.mediaType,
-        mediaPrompt: payload.mediaPrompt,
-        options: [...payload.options],
-        correctIndex: payload.correctOptionIndex
-      };
-      setMessage(adminMessage, error.message || `${quiz.title} question ${activeQuestionIndex + 1} was saved locally.`, "error");
+    if (isDraftQuestion) {
+      try {
+        const response = await quizApi.createQuestion(session.token, quiz.id, payload);
+        quiz.questions[activeQuestionIndex] = mapQuestion(question.id, response);
+        questionResultMessage = `${quiz.title} question ${questionNumber} saved.`;
+      } catch (error) {
+        setMessage(adminMessage, error.message || "Failed to save question. Please try again.", "error");
+        return;
+      }
+    } else {
+      try {
+        const response = await quizApi.updateQuestion(session.token, question.id, payload);
+        quiz.questions[activeQuestionIndex] = mapQuestion(quiz.questions[activeQuestionIndex].id, response);
+        questionResultMessage = `${quiz.title} question ${questionNumber} saved.`;
+      } catch (error) {
+        quiz.questions[activeQuestionIndex] = {
+          ...quiz.questions[activeQuestionIndex],
+          text: payload.text,
+          mediaType: payload.mediaType,
+          mediaUrl: payload.mediaUrl,
+          mediaPrompt: payload.mediaPrompt,
+          options: [...payload.options],
+          correctIndex: payload.correctOptionIndex,
+          points: payload.points
+        };
+        setMessage(adminMessage, error.message || `${quiz.title} question ${activeQuestionIndex + 1} was saved locally.`, "error");
+      }
     }
 
     renderQuizLibrary();
     closeQuestionModal();
+    if (questionModalReturnTarget === "quiz-modal") {
+      openQuizModal(quiz.id, { questionsMessage: questionResultMessage });
+    } else {
+      setMessage(adminMessage, questionResultMessage, "success");
+    }
   }
 
   async function deleteQuestion() {
@@ -609,26 +642,33 @@ if (session) {
     }
 
     const question = quiz.questions[activeQuestionIndex];
+    if (isDraftQuestionId(question.id)) {
+      quiz.questions.splice(activeQuestionIndex, 1);
+      updateSummary();
+      renderQuizLibrary();
+      closeQuestionModal();
+      if (questionModalReturnTarget === "quiz-modal") {
+        openQuizModal(quiz.id, { questionsMessage: "Draft question removed." });
+      } else {
+        setMessage(adminMessage, "Draft question removed.", "success");
+      }
+      return;
+    }
 
     try {
       await quizApi.deleteQuestion(session.token, question.id);
-      usingQuizFallback = false;
     } catch (error) {
       setMessage(adminMessage, error.message || `${quiz.title} question was removed locally.`, "error");
     }
 
     quiz.questions.splice(activeQuestionIndex, 1);
     renderQuizLibrary();
-
-    if (!quiz.questions.length) {
-      closeQuestionModal();
-      openQuizModal(quiz.id);
-      return;
-    }
-
-    const nextIndex = Math.min(activeQuestionIndex, quiz.questions.length - 1);
     closeQuestionModal();
-    openQuestionModal(quiz.id, nextIndex);
+    if (questionModalReturnTarget === "quiz-modal") {
+      openQuizModal(quiz.id, { questionsMessage: "Question deleted." });
+    } else {
+      setMessage(adminMessage, "Question deleted.", "success");
+    }
   }
 
   async function addNewQuestion(quizId, reopenQuizEditor = false) {
@@ -643,45 +683,38 @@ if (session) {
       mediaUrl: "",
       mediaPrompt: "Add a media prompt here.",
       options: ["Option A", "Option B", "Option C", "Option D"],
-      correctOptionIndex: 0
+      correctOptionIndex: 0,
+      points: 1
     };
 
-    let createdQuestion;
-
-    try {
-      const response = await quizApi.createQuestion(session.token, quiz.id, payload);
-      createdQuestion = mapQuestion(response.id, response);
-      usingQuizFallback = false;
-    } catch (error) {
-      createdQuestion = {
-        id: `local-question-${Date.now()}`,
-        text: payload.text,
-        mediaType: payload.mediaType,
-        mediaPrompt: payload.mediaPrompt,
-        options: [...payload.options],
-        correctIndex: payload.correctOptionIndex
-      };
-      setMessage(adminMessage, error.message || `${quiz.title} question was created locally.`, "error");
-    }
+    const createdQuestion = {
+      id: `draft-question-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      text: payload.text,
+      mediaType: payload.mediaType,
+      mediaUrl: payload.mediaUrl,
+      mediaPrompt: payload.mediaPrompt,
+      options: [...payload.options],
+      correctIndex: payload.correctOptionIndex,
+      points: payload.points
+    };
 
     quiz.questions.push(createdQuestion);
-    updateSummary();
-    renderQuizLibrary();
 
     if (reopenQuizEditor) {
       renderQuizModalQuestions(quiz);
     }
 
     closeQuizModal();
-    openQuestionModal(quiz.id, quiz.questions.length - 1);
+    openQuestionModal(quiz.id, quiz.questions.length - 1, {
+      returnTo: reopenQuizEditor ? "quiz-modal" : "library"
+    });
   }
 
   async function createQuiz() {
-    const nextDecade = 40 + quizzes.length * 10;
+    const defaultCategory = getCategoryOptions()[0] || "General";
     const payload = {
-      title: `${nextDecade}s Movie Quiz`,
-      category: `${nextDecade}s Movies`,
-      status: "Draft",
+      title: defaultCategory,
+      category: defaultCategory,
       description: ""
     };
 
@@ -690,13 +723,12 @@ if (session) {
     try {
       const response = await quizApi.createQuiz(session.token, payload);
       createdQuiz = mapQuizDetail(quizApi.normalizeQuizDetail(response));
-      usingQuizFallback = false;
     } catch (error) {
       createdQuiz = {
         id: `local-quiz-${Date.now()}`,
-        title: payload.title,
         category: payload.category,
-        status: payload.status,
+        title: payload.title,
+        status: "Draft",
         description: payload.description,
         questions: []
       };
@@ -720,12 +752,130 @@ if (session) {
   function mapQuizDetail(detail) {
     return {
       id: detail.id,
-      title: detail.title,
-      category: detail.category,
+      title: detail.title || detail.category || "Quiz",
+      category: detail.category || detail.title || "General",
       status: detail.status,
       description: detail.description || "",
       questions: detail.questions.map((question) => mapQuestion(question.id, question))
     };
+  }
+
+  function mergeQuizzesByCategory(items) {
+    const groups = new Map();
+
+    for (const quiz of items) {
+      const key = (quiz.category || quiz.title || "").trim().toLowerCase();
+      if (!key) {
+        continue;
+      }
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          ...quiz,
+          title: quiz.category || quiz.title,
+          category: quiz.category || quiz.title,
+          questions: [...quiz.questions]
+        });
+        continue;
+      }
+
+      const existing = groups.get(key);
+      existing.questions.push(...quiz.questions);
+      if (!existing.description && quiz.description) {
+        existing.description = quiz.description;
+      }
+    }
+
+    for (const grouped of groups.values()) {
+      grouped.questions = grouped.questions
+        .slice()
+        .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+      grouped.status = grouped.questions.length > 0 ? "Published" : "Draft";
+    }
+
+    return [...groups.values()].sort((a, b) => a.category.localeCompare(b.category));
+  }
+
+  async function submitCategoryFromInlineInput() {
+    const normalizedName = quizModalCategoryCreateInput.value.trim();
+    if (!normalizedName) {
+      setMessage(quizModalCategoryCreateMessage, "Category name cannot be empty.", "error");
+      quizModalCategoryCreateInput.focus();
+      return;
+    }
+
+    quizModalCategoryCreateButton.disabled = true;
+    if (creatingCategoryFromNewButton) {
+      setMessage(quizModalCategoryCreateMessage, "Adding category...", "success");
+
+      try {
+      await quizApi.createCategory(session.token, { name: normalizedName });
+      await loadAdminQuizzes();
+      updateSummary();
+      renderQuizLibrary();
+      } catch (error) {
+        quizModalCategoryCreateButton.disabled = false;
+        setMessage(quizModalCategoryCreateMessage, error.message || "Failed to add category.", "error");
+        return;
+      }
+
+      quizModalCategoryCreateButton.disabled = false;
+      setMessage(quizModalCategoryCreateMessage, `Category "${normalizedName}" added successfully.`, "success");
+      setMessage(adminMessage, `Category "${normalizedName}" added.`, "success");
+
+      const target = quizzes.find((entry) => (entry.category || "").trim().toLowerCase() === normalizedName.toLowerCase());
+      if (target) {
+        openQuizModal(target.id);
+        return;
+      }
+
+      closeQuizModal();
+      return;
+    }
+
+    const currentQuiz = quizzes.find((entry) => entry.id === editingQuizMetaId);
+    if (!currentQuiz) {
+      quizModalCategoryCreateButton.disabled = false;
+      setMessage(quizModalCategoryCreateMessage, "Category not found.", "error");
+      return;
+    }
+
+    const currentName = (currentQuiz.category || currentQuiz.title || "").trim();
+    if (currentName.toLowerCase() === normalizedName.toLowerCase()) {
+      quizModalCategoryCreateButton.disabled = false;
+      setMessage(quizModalCategoryCreateMessage, "No changes to update.", "error");
+      return;
+    }
+
+    setMessage(quizModalCategoryCreateMessage, "Updating category...", "success");
+    try {
+      await quizApi.updateQuiz(session.token, currentQuiz.id, {
+        title: normalizedName,
+        category: normalizedName,
+        status: currentQuiz.status || "Draft",
+        description: currentQuiz.description || ""
+      });
+
+      await loadAdminQuizzes();
+      updateSummary();
+      renderQuizLibrary();
+    } catch (error) {
+      quizModalCategoryCreateButton.disabled = false;
+      setMessage(quizModalCategoryCreateMessage, error.message || "Failed to update category.", "error");
+      return;
+    }
+
+    quizModalCategoryCreateButton.disabled = false;
+    setMessage(quizModalCategoryCreateMessage, `Category renamed to "${normalizedName}".`, "success");
+    setMessage(adminMessage, `Category "${currentName}" updated to "${normalizedName}".`, "success");
+
+    const target = quizzes.find((entry) => (entry.category || "").trim().toLowerCase() === normalizedName.toLowerCase());
+    if (target) {
+      openQuizModal(target.id);
+      return;
+    }
+
+    closeQuizModal();
   }
 
   function mapQuestion(existingId, payload) {
@@ -733,11 +883,147 @@ if (session) {
       id: payload.id || existingId,
       text: payload.text || "",
       mediaType: payload.mediaType || "Image",
+      mediaUrl: payload.mediaUrl || "",
       mediaPrompt: payload.mediaPrompt || "",
       options: Array.isArray(payload.options)
         ? payload.options.map((option) => typeof option === "string" ? option : option.text || "")
         : [],
-      correctIndex: payload.correctOptionIndex ?? 0
+      correctIndex: payload.correctOptionIndex ?? 0,
+      points: Math.max(Number.parseInt(String(payload.points ?? 1), 10) || 1, 1)
     };
+  }
+
+  function renderQuestionMediaPreview() {
+    const mediaType = (questionMediaTypeInput.value || "").trim().toLowerCase();
+    const mediaUrl = (questionMediaUrlInput.value || "").trim();
+    const prompt = (questionMediaPromptInput.value || "").trim();
+
+    questionMediaPreview.textContent = "";
+
+    if (mediaType === "quote") {
+      const quote = document.createElement("blockquote");
+      quote.className = "admin-media-preview-quote";
+      quote.textContent = prompt || "Quote preview will appear here.";
+      questionMediaPreview.appendChild(quote);
+      return;
+    }
+
+    if (!mediaUrl) {
+      const empty = document.createElement("p");
+      empty.className = "recent-result-meta";
+      empty.textContent = "Enter a media URL to preview.";
+      questionMediaPreview.appendChild(empty);
+      return;
+    }
+
+    if (mediaType === "image") {
+      const image = document.createElement("img");
+      image.className = "admin-media-preview-image";
+      image.src = mediaUrl;
+      image.alt = "Image preview";
+      image.loading = "lazy";
+      image.addEventListener("error", () => {
+        questionMediaPreview.textContent = "";
+        const error = document.createElement("p");
+        error.className = "recent-result-meta";
+        error.textContent = "Image preview failed. Please check the URL.";
+        questionMediaPreview.appendChild(error);
+      });
+      questionMediaPreview.appendChild(image);
+      return;
+    }
+
+    if (mediaType === "video") {
+      const youtubeEmbedUrl = toYouTubeEmbedUrl(mediaUrl);
+      if (youtubeEmbedUrl) {
+        const frame = document.createElement("iframe");
+        frame.className = "admin-media-preview-iframe";
+        frame.src = youtubeEmbedUrl;
+        frame.title = "YouTube preview";
+        frame.loading = "lazy";
+        frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        frame.referrerPolicy = "strict-origin-when-cross-origin";
+        frame.allowFullscreen = true;
+        questionMediaPreview.appendChild(frame);
+        return;
+      }
+
+      const video = document.createElement("video");
+      video.className = "admin-media-preview-player";
+      video.src = mediaUrl;
+      video.controls = true;
+      video.preload = "metadata";
+      questionMediaPreview.appendChild(video);
+      return;
+    }
+
+    if (mediaType === "audio") {
+      const audio = document.createElement("audio");
+      audio.className = "admin-media-preview-player";
+      audio.src = mediaUrl;
+      audio.controls = true;
+      audio.preload = "metadata";
+      questionMediaPreview.appendChild(audio);
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = mediaUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open media URL";
+    questionMediaPreview.appendChild(link);
+  }
+
+  function toYouTubeEmbedUrl(url) {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      if (host.includes("youtube.com")) {
+        const v = parsed.searchParams.get("v");
+        if (v) {
+          return `https://www.youtube.com/embed/${encodeURIComponent(v)}`;
+        }
+
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        if (parts.length >= 2 && (parts[0] === "shorts" || parts[0] === "embed")) {
+          return `https://www.youtube.com/embed/${encodeURIComponent(parts[1])}`;
+        }
+      }
+
+      if (host === "youtu.be") {
+        const id = parsed.pathname.split("/").filter(Boolean)[0];
+        if (id) {
+          return `https://www.youtube.com/embed/${encodeURIComponent(id)}`;
+        }
+      }
+    } catch {
+      return "";
+    }
+
+    return "";
+  }
+
+  function showConfirmModal({ title, message }) {
+    setText(confirmModalTitle, title || "Confirm action");
+    setText(confirmModalMessage, message || "");
+    confirmModal.hidden = false;
+
+    return new Promise((resolve) => {
+      pendingConfirmResolver = resolve;
+      queueMicrotask(() => confirmModalOkButton.focus());
+    });
+  }
+
+  function resolveConfirmModal(result) {
+    if (!pendingConfirmResolver) {
+      confirmModal.hidden = true;
+      return;
+    }
+
+    const resolve = pendingConfirmResolver;
+    pendingConfirmResolver = null;
+    confirmModal.hidden = true;
+    resolve(Boolean(result));
   }
 }
