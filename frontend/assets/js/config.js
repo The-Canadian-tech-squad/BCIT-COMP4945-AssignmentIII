@@ -33,6 +33,8 @@ export const AppConfig = Object.freeze({
     login: "./login.html",
     register: "./register.html",
     userDashboard: "./user-dashboard.html",
-    adminDashboard: "./admin-dashboard.html"
+    adminDashboard: "./admin-dashboard.html",
+    moderatedHost: "./moderated-host.html",
+    moderatedParticipant: "./moderated-participant.html"
   })
 });
