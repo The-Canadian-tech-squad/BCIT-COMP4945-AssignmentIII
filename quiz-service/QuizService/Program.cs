@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using QuizService.Hubs;
 using QuizService.Options;
 using QuizService.Services;
 using System.Text;
@@ -7,8 +8,10 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<ModeratedQuizSessionStore>();
 
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
@@ -64,6 +67,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.RequireHttpsMetadata = false;
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrWhiteSpace(accessToken) && path.StartsWithSegments("/hubs/moderated-quiz"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -92,10 +109,12 @@ if (useOracleOdbc)
         options.ConnectionString = oracleConnectionString!;
     });
     builder.Services.AddScoped<IQuizDataService, OdbcQuizDataService>();
+    builder.Services.AddSingleton<IModeratedQuizPersistenceService, OdbcModeratedQuizPersistenceService>();
 }
 else
 {
     builder.Services.AddSingleton<IQuizDataService, FileQuizDataService>();
+    builder.Services.AddSingleton<IModeratedQuizPersistenceService, NoopModeratedQuizPersistenceService>();
 }
 
 var corsOptions = builder.Configuration
@@ -110,13 +129,15 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
         else
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins("http://localhost:3000")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
     });
 });
@@ -133,5 +154,6 @@ app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ModeratedQuizHub>("/hubs/moderated-quiz");
 
 app.Run();

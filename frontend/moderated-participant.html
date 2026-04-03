@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderated Participant | Answerly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-page="moderated-participant">
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Answerly</a>
+      <nav class="topbar-nav">
+        <span id="participantUserLabel" class="nav-pill">Loading...</span>
+        <a class="button button-secondary" href="./user-dashboard.html">User Dashboard</a>
+        <button id="participantLogoutButton" class="button button-ghost" type="button">Logout</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-layout">
+      <section class="card card-panel quiz-categories-panel" style="grid-column: span 4;">
+        <p class="eyebrow">Moderated Session</p>
+        <h2>Join Session</h2>
+
+        <label class="field">
+          <span>Session code</span>
+          <input id="sessionCodeInput" type="text" maxlength="6" placeholder="Enter 6-char code">
+        </label>
+
+        <label class="field">
+          <span>Display name</span>
+          <input id="displayNameInput" type="text" maxlength="60" placeholder="Your name on host screen">
+        </label>
+
+        <div class="editor-actions">
+          <button id="joinSessionButton" class="button" type="button">Join Session</button>
+        </div>
+
+        <p id="participantMessage" class="feedback-message" aria-live="polite"></p>
+        <p id="joinedSessionPill" class="nav-pill" hidden></p>
+      </section>
+
+      <section class="card card-panel score-summary-panel" style="grid-column: span 8;">
+        <p class="eyebrow">Live Question</p>
+        <h2 id="participantQuestionTitle">No active question</h2>
+        <p id="participantQuestionText" class="recent-result-meta">Join a session and wait for the host to push a question.</p>
+        <div id="participantMediaPreview" class="admin-media-preview" hidden></div>
+
+        <div id="participantOptionsList" class="quiz-options-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@9.0.6/dist/browser/signalr.min.js"></script>
+  <script type="module" src="./assets/js/pages/moderated-participant-page.js"></script>
+</body>
+</html>

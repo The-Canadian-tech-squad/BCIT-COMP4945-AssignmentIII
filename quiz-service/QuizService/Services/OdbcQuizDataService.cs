@@ -552,7 +552,11 @@ public sealed class OdbcQuizDataService : IQuizDataService
             return [];
         }
 
-        return await LoadHistoriesAsync(connection, dbUserId);
+        var resolvedEmail = !string.IsNullOrWhiteSpace(userEmail)
+            ? userEmail.Trim().ToLowerInvariant()
+            : await ResolveUserEmailAsync(connection, dbUserId);
+
+        return await LoadHistoriesAsync(connection, dbUserId, resolvedEmail);
     }
 
     public async Task<IReadOnlyList<UserHistoryDto>> GetHistoriesAsync()
@@ -574,7 +578,8 @@ public sealed class OdbcQuizDataService : IQuizDataService
         var all = new List<UserHistoryDto>();
         foreach (var id in userIds.Distinct())
         {
-            all.AddRange(await LoadHistoriesAsync(connection, id));
+            var email = await ResolveUserEmailAsync(connection, id);
+            all.AddRange(await LoadHistoriesAsync(connection, id, email));
         }
 
         return all
@@ -582,7 +587,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
             .ToList();
     }
 
-    private async Task<IReadOnlyList<UserHistoryDto>> LoadHistoriesAsync(OdbcConnection connection, long dbUserId)
+    private async Task<IReadOnlyList<UserHistoryDto>> LoadHistoriesAsync(OdbcConnection connection, long dbUserId, string userEmail)
     {
         var rows = new List<HistoryRow>();
 
@@ -596,11 +601,9 @@ public sealed class OdbcQuizDataService : IQuizDataService
                        ia.IS_CORRECT,
                        ia.SCORE,
                        ia.CREATED_AT,
-                       q.CATEGORY_ID,
-                       u.EMAIL
+                       q.CATEGORY_ID
                 FROM {_individualAnswersTable} ia
                 JOIN {_questionsTable} q ON q.QUESTION_ID = ia.QUESTION_ID
-                JOIN {_usersTable} u ON u.USER_ID = ia.USER_ID
                 WHERE ia.USER_ID = ?
                 ORDER BY ia.CREATED_AT DESC, ia.ANSWER_ID DESC
                 """;
@@ -619,7 +622,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
                     Score = ReadInt(reader, "SCORE"),
                     CreatedAt = ReadDateTimeOffset(reader, "CREATED_AT"),
                     CategoryId = ReadLong(reader, "CATEGORY_ID"),
-                    Email = ReadString(reader, "EMAIL")
+                    Email = userEmail
                 });
             }
         }
@@ -809,6 +812,23 @@ public sealed class OdbcQuizDataService : IQuizDataService
         }
 
         return Convert.ToInt64(value);
+    }
+
+    private async Task<string> ResolveUserEmailAsync(OdbcConnection connection, long dbUserId)
+    {
+        if (dbUserId <= 0)
+        {
+            return string.Empty;
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT EMAIL FROM {_usersTable} WHERE USER_ID = ?";
+        command.Parameters.Add(new OdbcParameter { Value = dbUserId });
+
+        var value = await command.ExecuteScalarAsync();
+        return value == null || value == DBNull.Value
+            ? string.Empty
+            : (Convert.ToString(value)?.Trim().ToLowerInvariant() ?? string.Empty);
     }
 
     private async Task<long> GetNextIdAsync(OdbcConnection connection, string tableName, string idColumn)
