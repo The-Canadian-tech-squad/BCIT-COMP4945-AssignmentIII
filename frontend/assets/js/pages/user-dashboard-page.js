@@ -41,6 +41,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "44444444-4444-4444-4444-000000000001",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=BkL9l7qovsE",
         mediaText: "Video: a black-and-white detective scene fades into a smoky jazz club.",
         text: "Which 1942 film stars Humphrey Bogart and Ingrid Bergman?",
         options: ["Casablanca", "Rebecca", "Citizen Kane", "Notorious"],
@@ -50,6 +52,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "44444444-4444-4444-4444-000000000002",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/wizard-of-oz.jpg",
         mediaText: "Image: Dorothy stands on a yellow brick road with Toto beside her.",
         text: "Which classic movie features the line 'There is no place like home'?",
         options: ["The Wizard of Oz", "Singin' in the Rain", "Fantasia", "Pinocchio"],
@@ -59,6 +63,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "44444444-4444-4444-4444-000000000003",
         mediaLabel: "Audio",
+        mediaType: "audio",
+        mediaUrl: "assets/images/quiz/audio-40s.mp3",
         mediaText: "Audio: a dramatic voice says, 'Here's looking at you, kid.'",
         text: "That quote is most closely associated with which movie?",
         options: ["Casablanca", "Laura", "Double Indemnity", "The Maltese Falcon"],
@@ -68,6 +74,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "44444444-4444-4444-4444-000000000004",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=5_EVHeNEIJY",
         mediaText: "Video: Gene Kelly dances joyfully through a rainy street.",
         text: "Who is the star performer most associated with Singin' in the Rain?",
         options: ["Gene Kelly", "Fred Astaire", "Jimmy Stewart", "Cary Grant"],
@@ -77,6 +85,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "44444444-4444-4444-4444-000000000005",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/citizen-kane.jpg",
         mediaText: "Image: a sled rests in the snow after a life story is told.",
         text: "What is the famous sled name revealed in Citizen Kane?",
         options: ["Rosebud", "Silver", "Starlight", "Snowbell"],
@@ -93,6 +103,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "55555555-5555-5555-5555-000000000001",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=SwenOlpbvTA",
         mediaText: "Video: a presidential inauguration crowd gathers in Washington, D.C.",
         text: "Who became U.S. president in 1953?",
         options: ["Dwight D. Eisenhower", "Harry S. Truman", "John F. Kennedy", "Lyndon B. Johnson"],
@@ -102,6 +114,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "55555555-5555-5555-5555-000000000002",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/eisenhower.jpg",
         mediaText: "Image: a smiling candidate in military uniform waves to supporters.",
         text: "Eisenhower was famous for serving as what before becoming president?",
         options: ["General", "Governor", "Judge", "Senator"],
@@ -111,6 +125,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "55555555-5555-5555-5555-000000000003",
         mediaLabel: "Audio",
+        mediaType: "audio",
+        mediaUrl: "assets/images/quiz/audio-50s.mp3",
         mediaText: "Audio: a report discusses tensions between the United States and the Soviet Union.",
         text: "The 1950s political climate was heavily shaped by which global conflict?",
         options: ["The Cold War", "The Crimean War", "The Gulf War", "The Boer War"],
@@ -120,6 +136,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "55555555-5555-5555-5555-000000000004",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=jdvGFVHYYTI",
         mediaText: "Video: a dramatic hearing room is filled with cameras and reporters.",
         text: "Which senator became strongly associated with anti-communist investigations in the 1950s?",
         options: ["Joseph McCarthy", "Hubert Humphrey", "Barry Goldwater", "George McGovern"],
@@ -129,6 +147,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "55555555-5555-5555-5555-000000000005",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/us-capitol.jpg",
         mediaText: "Image: world leaders meet at a long table beneath bright lights.",
         text: "Which city is the capital of the United States, where major federal political events take place?",
         options: ["Washington, D.C.", "New York City", "Boston", "Philadelphia"],
@@ -145,6 +165,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "66666666-6666-6666-6666-000000000001",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=TWghCdIqedA",
         mediaText: "Video: a bright kitchen commercial shows a powdered orange drink being stirred.",
         text: "Which drink brand was famously promoted as the beverage of astronauts?",
         options: ["Tang", "Pepsi", "Ovaltine", "Fresca"],
@@ -154,6 +176,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "66666666-6666-6666-6666-000000000002",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/barbie.jpg",
         mediaText: "Image: a fashion doll stands beside a bright pink convertible.",
         text: "Which doll became a huge cultural product in the 1960s?",
         options: ["Barbie", "Cabbage Patch Kid", "Beanie Baby", "Bratz"],
@@ -163,6 +187,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "66666666-6666-6666-6666-000000000003",
         mediaLabel: "Audio",
+        mediaType: "audio",
+        mediaUrl: "assets/images/quiz/audio-60s.mp3",
         mediaText: "Audio: a cheerful jingle sells a new non-stick pan for modern kitchens.",
         text: "Which material became a popular selling point for cookware in this era?",
         options: ["Teflon", "Granite", "Copper Glass", "Cast Resin"],
@@ -172,6 +198,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "66666666-6666-6666-6666-000000000004",
         mediaLabel: "Image",
+        mediaType: "image",
+        mediaUrl: "assets/images/quiz/pringles.jpg",
         mediaText: "Image: a tube-shaped can of stacked potato crisps sits on a grocery shelf.",
         text: "Which snack brand is known for selling potato crisps in a cylindrical can?",
         options: ["Pringles", "Doritos", "Cheetos", "Bugles"],
@@ -181,6 +209,8 @@ const fallbackQuizDetails = new Map([
       {
         id: "66666666-6666-6666-6666-000000000005",
         mediaLabel: "Video",
+        mediaType: "video",
+        mediaUrl: "https://www.youtube.com/watch?v=U4XknGqr3Bo",
         mediaText: "Video: a portable transistor radio rests beside a picnic blanket.",
         text: "Which portable product became a symbol of modern convenience in the 1960s?",
         options: ["Transistor radio", "Laptop computer", "DVD player", "Smartphone"],
