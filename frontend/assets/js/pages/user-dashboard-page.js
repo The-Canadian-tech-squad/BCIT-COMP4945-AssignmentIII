@@ -485,6 +485,7 @@ if (session) {
   }
 
   function closeQuizModal() {
+    stopActiveMedia();
     quizModal.hidden = true;
     document.body.classList.remove("modal-open");
     activeQuiz = null;
@@ -496,6 +497,110 @@ if (session) {
     modalMode = "play";
     quizFeedbackMessage.textContent = "";
     nextQuestionButton.disabled = true;
+  }
+
+  function stopActiveMedia() {
+    const mediaContainer = quizMediaBox;
+    if (!mediaContainer) return;
+    for (const el of mediaContainer.querySelectorAll("audio, video")) {
+      try { el.pause(); el.currentTime = 0; } catch { /* ignore */ }
+    }
+    for (const el of mediaContainer.querySelectorAll("iframe")) {
+      try { el.src = ""; } catch { /* ignore */ }
+    }
+  }
+
+  function toYouTubeEmbedUrl(url) {
+    if (!url) return "";
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      if (host === "youtu.be") {
+        const id = parsed.pathname.split("/").filter(Boolean)[0];
+        return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : "";
+      }
+      if (host.includes("youtube.com")) {
+        if (parsed.pathname === "/watch") {
+          const id = parsed.searchParams.get("v");
+          return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : "";
+        }
+        if (parsed.pathname.startsWith("/embed/")) {
+          return url.includes("autoplay") ? url : url + (url.includes("?") ? "&" : "?") + "autoplay=1";
+        }
+      }
+    } catch { return ""; }
+    return "";
+  }
+
+  function renderQuizMedia(question) {
+    if (!quizMediaBox) return;
+    quizMediaBox.textContent = "";
+
+    const mediaType = question.mediaType || "";
+    const mediaUrl = question.mediaUrl || "";
+
+    if (!mediaUrl) {
+      quizMediaBox.textContent = question.mediaText || "No media for this question.";
+      return;
+    }
+
+    const youtubeUrl = toYouTubeEmbedUrl(mediaUrl);
+    if (youtubeUrl) {
+      const iframe = document.createElement("iframe");
+      iframe.className = "quiz-media-iframe";
+      iframe.src = youtubeUrl;
+      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+      iframe.allowFullscreen = true;
+      quizMediaBox.appendChild(iframe);
+      return;
+    }
+
+    if (mediaType === "image") {
+      const img = document.createElement("img");
+      img.className = "quiz-media-image";
+      img.src = mediaUrl;
+      img.alt = question.mediaText || "Question image";
+      quizMediaBox.appendChild(img);
+      return;
+    }
+
+    if (mediaType === "audio") {
+      if (question.mediaText) {
+        const label = document.createElement("p");
+        label.className = "quiz-media-prompt";
+        label.textContent = question.mediaText;
+        quizMediaBox.appendChild(label);
+      }
+      const audio = document.createElement("audio");
+      audio.className = "quiz-media-player";
+      audio.src = mediaUrl;
+      audio.controls = true;
+      audio.autoplay = true;
+      quizMediaBox.appendChild(audio);
+      return;
+    }
+
+    if (mediaType === "video") {
+      const video = document.createElement("video");
+      video.className = "quiz-media-player";
+      video.src = mediaUrl;
+      video.controls = true;
+      video.autoplay = true;
+      quizMediaBox.appendChild(video);
+      return;
+    }
+
+    if (mediaType === "gif" || mediaUrl.endsWith(".gif")) {
+      const img = document.createElement("img");
+      img.className = "quiz-media-image";
+      img.src = mediaUrl;
+      img.alt = question.mediaText || "Animated image";
+      quizMediaBox.appendChild(img);
+      return;
+    }
+
+    quizMediaBox.textContent = question.mediaText || "Unsupported media type.";
   }
 
   function renderActiveQuestion() {
@@ -516,7 +621,8 @@ if (session) {
     setText(quizQuestionCounter, `Question ${activeQuestionIndex + 1} / ${activeQuiz.questions.length}`);
     setText(quizScorePill, `Score ${activeScore} / ${activeQuiz.questions.length}`);
     setText(quizQuestionText, question.text);
-    setText(quizMediaBox, question.mediaText);
+    stopActiveMedia();
+    renderQuizMedia(question);
     setMessage(
       quizFeedbackMessage,
       modalMode === "review"
@@ -645,6 +751,8 @@ if (session) {
         questions: detail.questions.map((question) => ({
           id: question.id,
           mediaLabel: question.mediaType,
+          mediaType: (question.mediaType || "").trim().toLowerCase(),
+          mediaUrl: (question.mediaUrl || "").trim(),
           mediaText: question.mediaPrompt || question.mediaUrl || `${question.mediaType} prompt unavailable.`,
           text: question.text,
           options: question.options.map((option) => option.text),
