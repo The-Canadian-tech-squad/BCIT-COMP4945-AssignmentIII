@@ -211,6 +211,8 @@ if (session) {
   const quizOptionsList = byId("quizOptionsList");
   const quizFeedbackMessage = byId("quizFeedbackMessage");
   const nextQuestionButton = byId("nextQuestionButton");
+  const autoPlayButton = byId("autoPlayButton");
+  const stopAutoPlayButton = byId("stopAutoPlayButton");
 
   let quizCategories = [];
   let recentResults = [];
@@ -223,6 +225,11 @@ if (session) {
   let hasSubmittedCurrentQuestion = false;
   let activeSelections = [];
   let modalMode = "play";
+  let autoPlayTimerId = null;
+  let isAutoPlaying = false;
+
+  const AUTO_PLAY_QUESTION_DELAY = 4000;
+  const AUTO_PLAY_ANSWER_DELAY = 2000;
 
   setText(currentUserLabel, session.user.email || UiStrings.signedInUserLabel);
   setText(roleValue, session.user.role);
@@ -245,6 +252,8 @@ if (session) {
 
   closeQuizButton.addEventListener("click", closeQuizModal);
   nextQuestionButton.addEventListener("click", goToNextQuestion);
+  autoPlayButton.addEventListener("click", startAutoPlay);
+  stopAutoPlayButton.addEventListener("click", stopAutoPlay);
   quizModal.addEventListener("click", (event) => {
     if (event.target instanceof HTMLElement && event.target.dataset.closeQuiz === "true") {
       closeQuizModal();
@@ -455,6 +464,9 @@ if (session) {
     hasSubmittedCurrentQuestion = false;
     activeSelections = [];
     modalMode = "play";
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+    if (autoPlayButton) autoPlayButton.hidden = false;
     quizModal.hidden = false;
     document.body.classList.add("modal-open");
     renderActiveQuestion();
@@ -479,12 +491,16 @@ if (session) {
     hasSubmittedCurrentQuestion = true;
     activeSelections = Array.isArray(result.answers) ? [...result.answers] : [];
     modalMode = "review";
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+    if (autoPlayButton) autoPlayButton.hidden = true;
     quizModal.hidden = false;
     document.body.classList.add("modal-open");
     renderActiveQuestion();
   }
 
   function closeQuizModal() {
+    cancelAutoPlay();
     stopActiveMedia();
     quizModal.hidden = true;
     document.body.classList.remove("modal-open");
@@ -783,6 +799,98 @@ if (session) {
         score: matchingResult?.score || `0/${quiz.questionCount || 0}`
       };
     });
+  }
+
+  function startAutoPlay() {
+    if (!activeQuiz || !activeQuiz.questions.length) {
+      setMessage(quizFeedbackMessage, "No questions available for auto-play.", "error");
+      return;
+    }
+
+    isAutoPlaying = true;
+    activeQuestionIndex = 0;
+    activeScore = 0;
+    selectedOptionIndex = null;
+    hasSubmittedCurrentQuestion = false;
+    activeSelections = [];
+    modalMode = "play";
+    updateAutoPlayUI();
+    renderActiveQuestion();
+    setMessage(quizFeedbackMessage, "Auto-play started. Sit back and watch.", "success");
+    scheduleAutoPlayReveal();
+  }
+
+  function stopAutoPlay() {
+    cancelAutoPlay();
+    setMessage(quizFeedbackMessage, "Auto-play stopped.", "success");
+  }
+
+  function cancelAutoPlay() {
+    if (autoPlayTimerId !== null) {
+      window.clearTimeout(autoPlayTimerId);
+      autoPlayTimerId = null;
+    }
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+  }
+
+  function updateAutoPlayUI() {
+    if (autoPlayButton) autoPlayButton.hidden = isAutoPlaying;
+    if (stopAutoPlayButton) stopAutoPlayButton.hidden = !isAutoPlaying;
+    if (nextQuestionButton) nextQuestionButton.hidden = isAutoPlaying;
+  }
+
+  function scheduleAutoPlayReveal() {
+    if (!isAutoPlaying || !activeQuiz) return;
+    autoPlayTimerId = window.setTimeout(() => {
+      autoPlayRevealAnswer();
+    }, AUTO_PLAY_QUESTION_DELAY);
+  }
+
+  function autoPlayRevealAnswer() {
+    if (!isAutoPlaying || !activeQuiz) return;
+
+    const question = activeQuiz.questions[activeQuestionIndex];
+    if (!question) { cancelAutoPlay(); return; }
+
+    const correctIdx = question.correctIndex;
+    selectedOptionIndex = correctIdx;
+    hasSubmittedCurrentQuestion = true;
+    activeSelections[activeQuestionIndex] = correctIdx;
+    activeScore += 1;
+
+    const buttons = quizOptionsList.querySelectorAll(".quiz-option-button");
+    buttons.forEach((btn, idx) => {
+      if (idx === correctIdx) {
+        btn.classList.add("is-selected", "is-correct");
+      }
+      btn.disabled = true;
+    });
+
+    setText(quizScorePill, `Score ${activeScore} / ${activeQuiz.questions.length}`);
+    setMessage(quizFeedbackMessage, `Correct answer: ${question.options[correctIdx]}`, "success");
+
+    autoPlayTimerId = window.setTimeout(() => {
+      autoPlayAdvance();
+    }, AUTO_PLAY_ANSWER_DELAY);
+  }
+
+  function autoPlayAdvance() {
+    if (!isAutoPlaying || !activeQuiz) return;
+
+    if (activeQuestionIndex >= activeQuiz.questions.length - 1) {
+      cancelAutoPlay();
+      setMessage(quizFeedbackMessage, "Auto-play finished.", "success");
+      closeQuizModal();
+      return;
+    }
+
+    activeQuestionIndex += 1;
+    selectedOptionIndex = null;
+    hasSubmittedCurrentQuestion = false;
+    renderActiveQuestion();
+    updateAutoPlayUI();
+    scheduleAutoPlayReveal();
   }
 
   function findQuizIdByTitle(title) {

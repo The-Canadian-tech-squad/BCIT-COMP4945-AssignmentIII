@@ -96,7 +96,11 @@
 
       <div class="quiz-modal-footer">
         <p id="quizFeedbackMessage" class="feedback-message" aria-live="polite"></p>
-        <button id="nextQuestionButton" class="button" type="button" disabled>Next question</button>
+        <div class="quiz-modal-actions">
+          <button id="autoPlayButton" class="button button-secondary" type="button">Auto-play</button>
+          <button id="stopAutoPlayButton" class="button button-ghost" type="button" hidden>Stop auto-play</button>
+          <button id="nextQuestionButton" class="button" type="button" disabled>Next question</button>
+        </div>
       </div>
     </section>
   </div>
