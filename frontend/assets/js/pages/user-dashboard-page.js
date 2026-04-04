@@ -211,6 +211,8 @@ if (session) {
   const quizOptionsList = byId("quizOptionsList");
   const quizFeedbackMessage = byId("quizFeedbackMessage");
   const nextQuestionButton = byId("nextQuestionButton");
+  const autoPlayButton = byId("autoPlayButton");
+  const stopAutoPlayButton = byId("stopAutoPlayButton");
 
   let quizCategories = [];
   let recentResults = [];
@@ -223,6 +225,11 @@ if (session) {
   let hasSubmittedCurrentQuestion = false;
   let activeSelections = [];
   let modalMode = "play";
+  let autoPlayTimerId = null;
+  let isAutoPlaying = false;
+
+  const AUTO_PLAY_QUESTION_DELAY = 4000;
+  const AUTO_PLAY_ANSWER_DELAY = 2000;
 
   setText(currentUserLabel, session.user.email || UiStrings.signedInUserLabel);
   setText(roleValue, session.user.role);
@@ -245,6 +252,8 @@ if (session) {
 
   closeQuizButton.addEventListener("click", closeQuizModal);
   nextQuestionButton.addEventListener("click", goToNextQuestion);
+  autoPlayButton.addEventListener("click", startAutoPlay);
+  stopAutoPlayButton.addEventListener("click", stopAutoPlay);
   quizModal.addEventListener("click", (event) => {
     if (event.target instanceof HTMLElement && event.target.dataset.closeQuiz === "true") {
       closeQuizModal();
@@ -455,6 +464,9 @@ if (session) {
     hasSubmittedCurrentQuestion = false;
     activeSelections = [];
     modalMode = "play";
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+    if (autoPlayButton) autoPlayButton.hidden = false;
     quizModal.hidden = false;
     document.body.classList.add("modal-open");
     renderActiveQuestion();
@@ -479,12 +491,17 @@ if (session) {
     hasSubmittedCurrentQuestion = true;
     activeSelections = Array.isArray(result.answers) ? [...result.answers] : [];
     modalMode = "review";
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+    if (autoPlayButton) autoPlayButton.hidden = true;
     quizModal.hidden = false;
     document.body.classList.add("modal-open");
     renderActiveQuestion();
   }
 
   function closeQuizModal() {
+    cancelAutoPlay();
+    stopActiveMedia();
     quizModal.hidden = true;
     document.body.classList.remove("modal-open");
     activeQuiz = null;
@@ -496,6 +513,110 @@ if (session) {
     modalMode = "play";
     quizFeedbackMessage.textContent = "";
     nextQuestionButton.disabled = true;
+  }
+
+  function stopActiveMedia() {
+    const mediaContainer = quizMediaBox;
+    if (!mediaContainer) return;
+    for (const el of mediaContainer.querySelectorAll("audio, video")) {
+      try { el.pause(); el.currentTime = 0; } catch { /* ignore */ }
+    }
+    for (const el of mediaContainer.querySelectorAll("iframe")) {
+      try { el.src = ""; } catch { /* ignore */ }
+    }
+  }
+
+  function toYouTubeEmbedUrl(url) {
+    if (!url) return "";
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      if (host === "youtu.be") {
+        const id = parsed.pathname.split("/").filter(Boolean)[0];
+        return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : "";
+      }
+      if (host.includes("youtube.com")) {
+        if (parsed.pathname === "/watch") {
+          const id = parsed.searchParams.get("v");
+          return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : "";
+        }
+        if (parsed.pathname.startsWith("/embed/")) {
+          return url.includes("autoplay") ? url : url + (url.includes("?") ? "&" : "?") + "autoplay=1";
+        }
+      }
+    } catch { return ""; }
+    return "";
+  }
+
+  function renderQuizMedia(question) {
+    if (!quizMediaBox) return;
+    quizMediaBox.textContent = "";
+
+    const mediaType = question.mediaType || "";
+    const mediaUrl = question.mediaUrl || "";
+
+    if (!mediaUrl) {
+      quizMediaBox.textContent = question.mediaText || "No media for this question.";
+      return;
+    }
+
+    const youtubeUrl = toYouTubeEmbedUrl(mediaUrl);
+    if (youtubeUrl) {
+      const iframe = document.createElement("iframe");
+      iframe.className = "quiz-media-iframe";
+      iframe.src = youtubeUrl;
+      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+      iframe.allowFullscreen = true;
+      quizMediaBox.appendChild(iframe);
+      return;
+    }
+
+    if (mediaType === "image") {
+      const img = document.createElement("img");
+      img.className = "quiz-media-image";
+      img.src = mediaUrl;
+      img.alt = question.mediaText || "Question image";
+      quizMediaBox.appendChild(img);
+      return;
+    }
+
+    if (mediaType === "audio") {
+      if (question.mediaText) {
+        const label = document.createElement("p");
+        label.className = "quiz-media-prompt";
+        label.textContent = question.mediaText;
+        quizMediaBox.appendChild(label);
+      }
+      const audio = document.createElement("audio");
+      audio.className = "quiz-media-player";
+      audio.src = mediaUrl;
+      audio.controls = true;
+      audio.autoplay = true;
+      quizMediaBox.appendChild(audio);
+      return;
+    }
+
+    if (mediaType === "video") {
+      const video = document.createElement("video");
+      video.className = "quiz-media-player";
+      video.src = mediaUrl;
+      video.controls = true;
+      video.autoplay = true;
+      quizMediaBox.appendChild(video);
+      return;
+    }
+
+    if (mediaType === "gif" || mediaUrl.endsWith(".gif")) {
+      const img = document.createElement("img");
+      img.className = "quiz-media-image";
+      img.src = mediaUrl;
+      img.alt = question.mediaText || "Animated image";
+      quizMediaBox.appendChild(img);
+      return;
+    }
+
+    quizMediaBox.textContent = question.mediaText || "Unsupported media type.";
   }
 
   function renderActiveQuestion() {
@@ -516,7 +637,8 @@ if (session) {
     setText(quizQuestionCounter, `Question ${activeQuestionIndex + 1} / ${activeQuiz.questions.length}`);
     setText(quizScorePill, `Score ${activeScore} / ${activeQuiz.questions.length}`);
     setText(quizQuestionText, question.text);
-    setText(quizMediaBox, question.mediaText);
+    stopActiveMedia();
+    renderQuizMedia(question);
     setMessage(
       quizFeedbackMessage,
       modalMode === "review"
@@ -645,6 +767,8 @@ if (session) {
         questions: detail.questions.map((question) => ({
           id: question.id,
           mediaLabel: question.mediaType,
+          mediaType: (question.mediaType || "").trim().toLowerCase(),
+          mediaUrl: (question.mediaUrl || "").trim(),
           mediaText: question.mediaPrompt || question.mediaUrl || `${question.mediaType} prompt unavailable.`,
           text: question.text,
           options: question.options.map((option) => option.text),
@@ -675,6 +799,98 @@ if (session) {
         score: matchingResult?.score || `0/${quiz.questionCount || 0}`
       };
     });
+  }
+
+  function startAutoPlay() {
+    if (!activeQuiz || !activeQuiz.questions.length) {
+      setMessage(quizFeedbackMessage, "No questions available for auto-play.", "error");
+      return;
+    }
+
+    isAutoPlaying = true;
+    activeQuestionIndex = 0;
+    activeScore = 0;
+    selectedOptionIndex = null;
+    hasSubmittedCurrentQuestion = false;
+    activeSelections = [];
+    modalMode = "play";
+    updateAutoPlayUI();
+    renderActiveQuestion();
+    setMessage(quizFeedbackMessage, "Auto-play started. Sit back and watch.", "success");
+    scheduleAutoPlayReveal();
+  }
+
+  function stopAutoPlay() {
+    cancelAutoPlay();
+    setMessage(quizFeedbackMessage, "Auto-play stopped.", "success");
+  }
+
+  function cancelAutoPlay() {
+    if (autoPlayTimerId !== null) {
+      window.clearTimeout(autoPlayTimerId);
+      autoPlayTimerId = null;
+    }
+    isAutoPlaying = false;
+    updateAutoPlayUI();
+  }
+
+  function updateAutoPlayUI() {
+    if (autoPlayButton) autoPlayButton.hidden = isAutoPlaying;
+    if (stopAutoPlayButton) stopAutoPlayButton.hidden = !isAutoPlaying;
+    if (nextQuestionButton) nextQuestionButton.hidden = isAutoPlaying;
+  }
+
+  function scheduleAutoPlayReveal() {
+    if (!isAutoPlaying || !activeQuiz) return;
+    autoPlayTimerId = window.setTimeout(() => {
+      autoPlayRevealAnswer();
+    }, AUTO_PLAY_QUESTION_DELAY);
+  }
+
+  function autoPlayRevealAnswer() {
+    if (!isAutoPlaying || !activeQuiz) return;
+
+    const question = activeQuiz.questions[activeQuestionIndex];
+    if (!question) { cancelAutoPlay(); return; }
+
+    const correctIdx = question.correctIndex;
+    selectedOptionIndex = correctIdx;
+    hasSubmittedCurrentQuestion = true;
+    activeSelections[activeQuestionIndex] = correctIdx;
+    activeScore += 1;
+
+    const buttons = quizOptionsList.querySelectorAll(".quiz-option-button");
+    buttons.forEach((btn, idx) => {
+      if (idx === correctIdx) {
+        btn.classList.add("is-selected", "is-correct");
+      }
+      btn.disabled = true;
+    });
+
+    setText(quizScorePill, `Score ${activeScore} / ${activeQuiz.questions.length}`);
+    setMessage(quizFeedbackMessage, `Correct answer: ${question.options[correctIdx]}`, "success");
+
+    autoPlayTimerId = window.setTimeout(() => {
+      autoPlayAdvance();
+    }, AUTO_PLAY_ANSWER_DELAY);
+  }
+
+  function autoPlayAdvance() {
+    if (!isAutoPlaying || !activeQuiz) return;
+
+    if (activeQuestionIndex >= activeQuiz.questions.length - 1) {
+      cancelAutoPlay();
+      setMessage(quizFeedbackMessage, "Auto-play finished.", "success");
+      closeQuizModal();
+      return;
+    }
+
+    activeQuestionIndex += 1;
+    selectedOptionIndex = null;
+    hasSubmittedCurrentQuestion = false;
+    renderActiveQuestion();
+    updateAutoPlayUI();
+    scheduleAutoPlayReveal();
   }
 
   function findQuizIdByTitle(title) {
