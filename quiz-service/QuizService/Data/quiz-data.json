@@ -9,23 +9,24 @@
       "questions": [
         {
           "id": "44444444-4444-4444-4444-000000000001",
-          "text": "Which 1942 film stars Humphrey Bogart and Ingrid Bergman?",
+          "text": "Who\u2019s the person in the video?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://youtu.be/dQw4w9WgXcQ?si=pGenLHNOk0VGdjzA",
           "mediaPrompt": "Video: a black-and-white detective scene fades into a smoky jazz club.",
           "options": [
-            "Casablanca",
-            "Rebecca",
-            "Citizen Kane",
-            "Notorious"
+            "Rick Astley",
+            "Michael Jackson",
+            "Donald Trump",
+            "Tejinder Randhawa"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "44444444-4444-4444-4444-000000000002",
           "text": "Which classic movie features the line \u0027There is no place like home\u0027?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/wizard-of-oz.jpg",
           "mediaPrompt": "Image: Dorothy stands on a yellow brick road with Toto beside her.",
           "options": [
             "The Wizard of Oz",
@@ -33,13 +34,14 @@
             "Fantasia",
             "Pinocchio"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "44444444-4444-4444-4444-000000000003",
           "text": "That quote is most closely associated with which movie?",
           "mediaType": "Audio",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/audio-40s.mp3",
           "mediaPrompt": "Audio: a dramatic voice says, \u0027Here\u0027s looking at you, kid.\u0027",
           "options": [
             "Casablanca",
@@ -47,13 +49,14 @@
             "Double Indemnity",
             "The Maltese Falcon"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "44444444-4444-4444-4444-000000000004",
           "text": "Who is the star performer most associated with Singin\u0027 in the Rain?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://www.youtube.com/watch?v=5_EVHeNEIJY",
           "mediaPrompt": "Video: Gene Kelly dances joyfully through a rainy street.",
           "options": [
             "Gene Kelly",
@@ -61,13 +64,14 @@
             "Jimmy Stewart",
             "Cary Grant"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "44444444-4444-4444-4444-000000000005",
           "text": "What is the famous sled name revealed in Citizen Kane?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/citizen-kane.jpg",
           "mediaPrompt": "Image: a sled rests in the snow after a life story is told.",
           "options": [
             "Rosebud",
@@ -75,7 +79,8 @@
             "Starlight",
             "Snowbell"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         }
       ]
     },
@@ -90,7 +95,7 @@
           "id": "55555555-5555-5555-5555-000000000001",
           "text": "Who became U.S. president in 1953?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://www.youtube.com/watch?v=SwenOlpbvTA",
           "mediaPrompt": "Video: a presidential inauguration crowd gathers in Washington, D.C.",
           "options": [
             "Dwight D. Eisenhower",
@@ -98,13 +103,14 @@
             "John F. Kennedy",
             "Lyndon B. Johnson"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "55555555-5555-5555-5555-000000000002",
           "text": "Eisenhower was famous for serving as what before becoming president?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/eisenhower.jpg",
           "mediaPrompt": "Image: a smiling candidate in military uniform waves to supporters.",
           "options": [
             "General",
@@ -112,13 +118,14 @@
             "Judge",
             "Senator"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "55555555-5555-5555-5555-000000000003",
           "text": "The 1950s political climate was heavily shaped by which global conflict?",
           "mediaType": "Audio",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/audio-50s.mp3",
           "mediaPrompt": "Audio: a report discusses tensions between the United States and the Soviet Union.",
           "options": [
             "The Cold War",
@@ -126,13 +133,14 @@
             "The Gulf War",
             "The Boer War"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "55555555-5555-5555-5555-000000000004",
           "text": "Which senator became strongly associated with anti-communist investigations in the 1950s?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://www.youtube.com/watch?v=jdvGFVHYYTI",
           "mediaPrompt": "Video: a dramatic hearing room is filled with cameras and reporters.",
           "options": [
             "Joseph McCarthy",
@@ -140,13 +148,14 @@
             "Barry Goldwater",
             "George McGovern"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "55555555-5555-5555-5555-000000000005",
           "text": "Which city is the capital of the United States, where major federal political events take place?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/us-capitol.jpg",
           "mediaPrompt": "Image: world leaders meet at a long table beneath bright lights.",
           "options": [
             "Washington, D.C.",
@@ -154,7 +163,8 @@
             "Boston",
             "Philadelphia"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         }
       ]
     },
@@ -169,7 +179,7 @@
           "id": "66666666-6666-6666-6666-000000000001",
           "text": "Which drink brand was famously promoted as the beverage of astronauts?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://www.youtube.com/watch?v=TWghCdIqedA",
           "mediaPrompt": "Video: a bright kitchen commercial shows a powdered orange drink being stirred.",
           "options": [
             "Tang",
@@ -177,13 +187,14 @@
             "Ovaltine",
             "Fresca"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "66666666-6666-6666-6666-000000000002",
           "text": "Which doll became a huge cultural product in the 1960s?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/barbie.jpg",
           "mediaPrompt": "Image: a fashion doll stands beside a bright pink convertible.",
           "options": [
             "Barbie",
@@ -191,13 +202,14 @@
             "Beanie Baby",
             "Bratz"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "66666666-6666-6666-6666-000000000003",
           "text": "Which material became a popular selling point for cookware in this era?",
           "mediaType": "Audio",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/audio-60s.mp3",
           "mediaPrompt": "Audio: a cheerful jingle sells a new non-stick pan for modern kitchens.",
           "options": [
             "Teflon",
@@ -205,13 +217,14 @@
             "Copper Glass",
             "Cast Resin"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "66666666-6666-6666-6666-000000000004",
           "text": "Which snack brand is known for selling potato crisps in a cylindrical can?",
           "mediaType": "Image",
-          "mediaUrl": "",
+          "mediaUrl": "assets/images/quiz/pringles.jpg",
           "mediaPrompt": "Image: a tube-shaped can of stacked potato crisps sits on a grocery shelf.",
           "options": [
             "Pringles",
@@ -219,13 +232,14 @@
             "Cheetos",
             "Bugles"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         },
         {
           "id": "66666666-6666-6666-6666-000000000005",
           "text": "Which portable product became a symbol of modern convenience in the 1960s?",
           "mediaType": "Video",
-          "mediaUrl": "",
+          "mediaUrl": "https://www.youtube.com/watch?v=U4XknGqr3Bo",
           "mediaPrompt": "Video: a portable transistor radio rests beside a picnic blanket.",
           "options": [
             "Transistor radio",
@@ -233,7 +247,8 @@
             "DVD player",
             "Smartphone"
           ],
-          "correctOptionIndex": 0
+          "correctOptionIndex": 0,
+          "points": 1
         }
       ]
     }
@@ -775,6 +790,330 @@
         {
           "questionId": "66666666-6666-6666-6666-000000000005",
           "selectedOptionId": "d",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "9b5f1b7f-16cd-4c8b-a5c3-ab60f8c14c63",
+      "quizId": "44444444-4444-4444-4444-444444444444",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 5,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:02:49.005+00:00",
+      "answers": [
+        {
+          "questionId": "44444444-4444-4444-4444-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000002",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000003",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000004",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000005",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "c752721f-a671-4750-8c1b-91bb036e2979",
+      "quizId": "44444444-4444-4444-4444-444444444444",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 5,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:07:45.52+00:00",
+      "answers": [
+        {
+          "questionId": "44444444-4444-4444-4444-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000002",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000003",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000004",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000005",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "45c5f3e9-9f70-494b-b2f2-d93bfe71f3d2",
+      "quizId": "55555555-5555-5555-5555-555555555555",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 3,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:19:23.518+00:00",
+      "answers": [
+        {
+          "questionId": "55555555-5555-5555-5555-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000002",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000003",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000004",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000005",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        }
+      ]
+    },
+    {
+      "id": "bd5394ef-db81-4140-8824-a5eae5d1cfbe",
+      "quizId": "44444444-4444-4444-4444-444444444444",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 1,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:20:04.196+00:00",
+      "answers": [
+        {
+          "questionId": "44444444-4444-4444-4444-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000002",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000003",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000004",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000005",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "bab4640a-f75c-4823-b4ca-e31cb2df02ce",
+      "quizId": "55555555-5555-5555-5555-555555555555",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 0,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:20:25.348+00:00",
+      "answers": [
+        {
+          "questionId": "55555555-5555-5555-5555-000000000001",
+          "selectedOptionId": "c",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000002",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000003",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000004",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000005",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "29105a92-d3ec-4e75-9538-7e4ecdf697c7",
+      "quizId": "66666666-6666-6666-6666-666666666666",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 3,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:21:17.263+00:00",
+      "answers": [
+        {
+          "questionId": "66666666-6666-6666-6666-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000002",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000003",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000004",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000005",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "8f3c12c1-9b16-4658-9dea-2934cc3088f2",
+      "quizId": "44444444-4444-4444-4444-444444444444",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 3,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:33:45.049+00:00",
+      "answers": [
+        {
+          "questionId": "44444444-4444-4444-4444-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000002",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000003",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000004",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "44444444-4444-4444-4444-000000000005",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "1e452c33-d900-4c0c-9d83-caf895062230",
+      "quizId": "55555555-5555-5555-5555-555555555555",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 0,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:34:06.191+00:00",
+      "answers": [
+        {
+          "questionId": "55555555-5555-5555-5555-000000000001",
+          "selectedOptionId": "c",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000002",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000003",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000004",
+          "selectedOptionId": "b",
+          "isCorrect": false
+        },
+        {
+          "questionId": "55555555-5555-5555-5555-000000000005",
+          "selectedOptionId": "d",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "id": "b2a11c61-c22e-496f-af10-f0e4a0ca5b54",
+      "quizId": "66666666-6666-6666-6666-666666666666",
+      "userId": "d0b04017-ecea-4130-95ee-dc92edb03735",
+      "email": "xjrjerryxing@outlook.com",
+      "score": 4,
+      "totalQuestions": 5,
+      "completedAt": "2026-04-04T01:34:26.422+00:00",
+      "answers": [
+        {
+          "questionId": "66666666-6666-6666-6666-000000000001",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000002",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000003",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000004",
+          "selectedOptionId": "a",
+          "isCorrect": true
+        },
+        {
+          "questionId": "66666666-6666-6666-6666-000000000005",
+          "selectedOptionId": "b",
           "isCorrect": false
         }
       ]
