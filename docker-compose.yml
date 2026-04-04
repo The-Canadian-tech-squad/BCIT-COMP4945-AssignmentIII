@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: quiz-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "QuizApp_Strong!Pass1"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  auth-service:
+    build:
+      context: ./auth-service/AuthService
+      dockerfile: Dockerfile
+    container_name: quiz-auth-service
+    ports:
+      - "5070:10000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+    depends_on:
+      - sqlserver
+
+  quiz-service:
+    build:
+      context: ./quiz-service/QuizService
+      dockerfile: Dockerfile
+    container_name: quiz-quiz-service
+    ports:
+      - "5080:10001"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+    depends_on:
+      - sqlserver
+
+volumes:
+  sqlserver-data:
