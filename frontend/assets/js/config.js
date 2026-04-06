@@ -12,7 +12,8 @@ export const AppConfig = Object.freeze({
     userQuizSummary: "/users/me/quiz-summary",
     adminQuizzes: "/admin/quizzes",
     adminQuestions: "/admin/questions",
-    adminUserPerformance: "/admin/users/performance"
+    adminUserPerformance: "/admin/users/performance",
+    adminSessions: "/admin/users/sessions"
   }),
   storageKeys: Object.freeze({
     token: "user.token",

@@ -318,6 +318,11 @@ public sealed class FileQuizDataService : IQuizDataService
             .ToList();
     }
 
+    public Task<IReadOnlyList<AdminSessionSummaryDto>> GetAdminSessionsAsync()
+    {
+        return Task.FromResult<IReadOnlyList<AdminSessionSummaryDto>>([]);
+    }
+
     private async Task<QuizDataDocument> LoadAsync()
     {
         await _mutex.WaitAsync();

@@ -64,7 +64,7 @@ if (session) {
 
     state.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${AppConfig.quizServiceBaseUrl}/hubs/moderated-quiz`, {
-        accessTokenFactory: () => session.token
+        accessTokenFactory: () => sessionController.getSession().token || ""
       })
       .withAutomaticReconnect()
       .build();

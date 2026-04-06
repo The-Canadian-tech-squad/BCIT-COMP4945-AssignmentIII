@@ -9,6 +9,7 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
 {
     private readonly string _connectionString;
     private readonly string _usersTable;
+    private readonly string _rolesTable;
     private readonly string _questionsTable;
     private readonly string _sessionsTable;
     private readonly string _moderatedAnswersTable;
@@ -19,6 +20,7 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         var value = options.Value;
         _connectionString = value.ConnectionString;
         _usersTable = ResolveTableName(value.UsersTableName, "USERS");
+        _rolesTable = ResolveTableName(value.RolesTableName, "ROLES");
         _questionsTable = ResolveTableName(value.QuestionsTableName, "QUESTIONS");
         _sessionsTable = "SESSIONS";
         _moderatedAnswersTable = ResolveTableName(value.ModeratedAnswersTableName, "MODERATED_ANSWERS");
@@ -34,7 +36,7 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         using var connection = CreateConnection();
         await connection.OpenAsync();
 
-        var hostUserId = await ResolveUserIdByEmailAsync(connection, hostEmail.Trim());
+        var hostUserId = await EnsureUserIdByEmailAsync(connection, hostEmail.Trim());
         if (hostUserId <= 0)
         {
             return;
@@ -46,10 +48,8 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         {
             insert.CommandText = $"""
                 INSERT INTO {_sessionsTable} (HOST_USER_ID, SESSION_NAME, STATUS)
-                VALUES (?, ?, 'active')
+                VALUES ({hostUserId}, {ToSqlStringLiteral(sessionName)}, 'active')
                 """;
-            insert.Parameters.Add(new OdbcParameter { Value = hostUserId });
-            insert.Parameters.Add(new OdbcParameter { Value = sessionName });
             await insert.ExecuteNonQueryAsync();
         }
 
@@ -58,11 +58,10 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
             query.CommandText = $"""
                 SELECT SESSION_ID
                 FROM {_sessionsTable}
-                WHERE SESSION_NAME = ?
+                WHERE SESSION_NAME = {ToSqlStringLiteral(sessionName)}
                 ORDER BY SESSION_ID DESC
                 FETCH FIRST 1 ROWS ONLY
                 """;
-            query.Parameters.Add(new OdbcParameter { Value = sessionName });
 
             var sessionIdObj = await query.ExecuteScalarAsync();
             if (sessionIdObj == null || sessionIdObj == DBNull.Value)
@@ -95,7 +94,7 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
             return;
         }
 
-        var participantUserId = await ResolveUserIdByEmailAsync(connection, participantEmail.Trim());
+        var participantUserId = await EnsureUserIdByEmailAsync(connection, participantEmail.Trim());
         if (participantUserId <= 0)
         {
             return;
@@ -105,9 +104,8 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         questionCommand.CommandText = $"""
             SELECT ANSWERS_KEY, POINTS
             FROM {_questionsTable}
-            WHERE QUESTION_ID = ?
+            WHERE QUESTION_ID = {questionDbId}
             """;
-        questionCommand.Parameters.Add(new OdbcParameter { Value = questionDbId });
 
         string answersKey;
         var points = 1;
@@ -130,15 +128,8 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         using var insert = connection.CreateCommand();
         insert.CommandText = $"""
             INSERT INTO {_moderatedAnswersTable} (SESSION_ID, QUESTION_ID, PARTICIPANT_ID, SELECTED_ANSWER, IS_CORRECT, SCORE)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ({sessionDbId}, {questionDbId}, {participantUserId}, {ToSqlStringLiteral(selectedAnswer)}, {(isCorrect ? 1 : 0)}, {awardedScore})
             """;
-        insert.Parameters.Add(new OdbcParameter { Value = sessionDbId });
-        insert.Parameters.Add(new OdbcParameter { Value = questionDbId });
-        insert.Parameters.Add(new OdbcParameter { Value = participantUserId });
-        insert.Parameters.Add(new OdbcParameter { Value = selectedAnswer });
-        insert.Parameters.Add(new OdbcParameter { Value = isCorrect ? 1 : 0 });
-        insert.Parameters.Add(new OdbcParameter { Value = awardedScore });
-
         await insert.ExecuteNonQueryAsync();
     }
 
@@ -162,9 +153,8 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         update.CommandText = $"""
             UPDATE {_sessionsTable}
             SET STATUS = 'completed', END_AT = CURRENT_TIMESTAMP
-            WHERE SESSION_ID = ?
+            WHERE SESSION_ID = {sessionDbId}
             """;
-        update.Parameters.Add(new OdbcParameter { Value = sessionDbId });
         await update.ExecuteNonQueryAsync();
 
         _sessionIds.TryRemove(sessionCode.Trim().ToUpperInvariant(), out _);
@@ -182,11 +172,10 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         query.CommandText = $"""
             SELECT SESSION_ID
             FROM {_sessionsTable}
-            WHERE SESSION_NAME LIKE ?
+            WHERE SESSION_NAME LIKE {ToSqlStringLiteral($"MOD:{normalizedCode}:%")}
             ORDER BY SESSION_ID DESC
             FETCH FIRST 1 ROWS ONLY
             """;
-        query.Parameters.Add(new OdbcParameter { Value = $"MOD:{normalizedCode}:%" });
 
         var value = await query.ExecuteScalarAsync();
         if (value == null || value == DBNull.Value)
@@ -207,11 +196,90 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
         }
 
         using var query = connection.CreateCommand();
-        query.CommandText = $"SELECT USER_ID FROM {_usersTable} WHERE LOWER(EMAIL) = LOWER(?)";
-        query.Parameters.Add(new OdbcParameter { Value = userEmail });
+        query.CommandText = $"SELECT USER_ID FROM {_usersTable} WHERE LOWER(EMAIL) = LOWER({ToSqlStringLiteral(userEmail)})";
 
         var value = await query.ExecuteScalarAsync();
         return value == null || value == DBNull.Value ? 0 : Convert.ToInt64(value);
+    }
+
+    private async Task<long> EnsureUserIdByEmailAsync(OdbcConnection connection, string userEmail)
+    {
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return 0;
+        }
+
+        var existingUserId = await ResolveUserIdByEmailAsync(connection, normalizedEmail);
+        if (existingUserId > 0)
+        {
+            return existingUserId;
+        }
+
+        var roleId = await ResolveDefaultRoleIdAsync(connection);
+        if (roleId <= 0)
+        {
+            return 0;
+        }
+
+        var usernameBase = normalizedEmail.Contains("@")
+            ? normalizedEmail.Split('@')[0]
+            : normalizedEmail;
+        if (string.IsNullOrWhiteSpace(usernameBase))
+        {
+            usernameBase = "participant";
+        }
+
+        var username = $"{usernameBase}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
+        try
+        {
+            using var insert = connection.CreateCommand();
+            insert.CommandText = $"""
+                INSERT INTO {_usersTable} (USERNAME, EMAIL, PASSWORD_HASH, ROLE_ID)
+                VALUES (?, ?, ?, ?)
+                """;
+            insert.Parameters.Add(new OdbcParameter { Value = username });
+            insert.Parameters.Add(new OdbcParameter { Value = normalizedEmail });
+            insert.Parameters.Add(new OdbcParameter { Value = "moderated-mode-generated-user" });
+            insert.Parameters.Add(new OdbcParameter { Value = roleId });
+            await insert.ExecuteNonQueryAsync();
+        }
+        catch
+        {
+            // ignore insert race or unique conflicts, then re-resolve
+        }
+
+        return await ResolveUserIdByEmailAsync(connection, normalizedEmail);
+    }
+
+    private async Task<long> ResolveDefaultRoleIdAsync(OdbcConnection connection)
+    {
+        using (var preferred = connection.CreateCommand())
+        {
+            preferred.CommandText = $"""
+                SELECT ROLE_ID
+                FROM {_rolesTable}
+                WHERE LOWER(ROLE_NAME) IN ('general_user', 'user')
+                ORDER BY ROLE_ID
+                FETCH FIRST 1 ROWS ONLY
+                """;
+            var preferredId = await preferred.ExecuteScalarAsync();
+            if (preferredId != null && preferredId != DBNull.Value)
+            {
+                return Convert.ToInt64(preferredId);
+            }
+        }
+
+        using var fallback = connection.CreateCommand();
+        fallback.CommandText = $"""
+            SELECT ROLE_ID
+            FROM {_rolesTable}
+            ORDER BY ROLE_ID
+            FETCH FIRST 1 ROWS ONLY
+            """;
+        var fallbackId = await fallback.ExecuteScalarAsync();
+        return fallbackId == null || fallbackId == DBNull.Value ? 0 : Convert.ToInt64(fallbackId);
     }
 
     private OdbcConnection CreateConnection()
@@ -253,6 +321,11 @@ public sealed class OdbcModeratedQuizPersistenceService : IModeratedQuizPersiste
     private static string ResolveTableName(string configured, string fallback)
     {
         return string.IsNullOrWhiteSpace(configured) ? fallback : configured.Trim();
+    }
+
+    private static string ToSqlStringLiteral(string value)
+    {
+        return $"'{(value ?? string.Empty).Replace("'", "''")}'";
     }
 
     private static string ReadString(System.Data.Common.DbDataReader reader, string column)

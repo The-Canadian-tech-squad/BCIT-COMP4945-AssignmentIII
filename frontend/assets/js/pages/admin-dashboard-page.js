@@ -7,31 +7,6 @@ const sessionController = new SessionController();
 const quizApi = new QuizApiService();
 const session = sessionController.requireRole(AppConfig.roles.admin);
 
-const fallbackPerformanceItems = [
-  {
-    email: "test@test.com",
-    totalScore: "11/15",
-    totalAttempts: 3,
-    lastPlayed: "Mar 30, 2026 11:03 PM",
-    quizStats: [
-      { quizTitle: "40s Movie Quiz", bestScore: "4/5", completedAt: "Mar 30, 2026 11:03 PM" },
-      { quizTitle: "50s Politics Quiz", bestScore: "3/5", completedAt: "Mar 28, 2026 2:45 PM" },
-      { quizTitle: "60s Products Quiz", bestScore: "4/5", completedAt: "Mar 24, 2026 7:10 PM" }
-    ]
-  },
-  {
-    email: "john@john.com",
-    totalScore: "9/15",
-    totalAttempts: 3,
-    lastPlayed: "Mar 29, 2026 9:20 PM",
-    quizStats: [
-      { quizTitle: "40s Movie Quiz", bestScore: "2/5", completedAt: "Mar 29, 2026 9:20 PM" },
-      { quizTitle: "50s Politics Quiz", bestScore: "3/5", completedAt: "Mar 27, 2026 5:05 PM" },
-      { quizTitle: "60s Products Quiz", bestScore: "4/5", completedAt: "Mar 20, 2026 8:40 PM" }
-    ]
-  }
-];
-
 if (session) {
   const currentAdminLabel = byId("currentAdminLabel");
   const quizCountValue = byId("quizCountValue");
@@ -87,15 +62,17 @@ if (session) {
   const confirmModalCancelButton = byId("confirmModalCancelButton");
   const confirmModalOkButton = byId("confirmModalOkButton");
   let quizzes = [];
-  let userPerformanceItems = [];
+  let adminSessionItems = [];
   let activeQuizId = "";
   let activeQuestionIndex = 0;
-  let activeUserIndex = 0;
+  let activeSessionPage = 1;
+  let totalSessionPages = 1;
+  let totalSessionsCount = 0;
+  const sessionPageSize = 4;
   let activeQuizPageIndex = 0;
   const quizPageSize = 3;
   let editingQuizMetaId = null;
   let creatingCategoryFromNewButton = false;
-  let usingPerformanceFallback = false;
   let pendingConfirmResolver = null;
   let questionModalReturnTarget = "library";
 
@@ -107,22 +84,24 @@ if (session) {
     window.location.href = AppConfig.pages.login;
   });
 
-  previousUserButton.addEventListener("click", () => {
-    if (!userPerformanceItems.length) {
+  previousUserButton.addEventListener("click", async () => {
+    if (totalSessionPages <= 1) {
       return;
     }
 
-    activeUserIndex = activeUserIndex > 0 ? activeUserIndex - 1 : userPerformanceItems.length - 1;
-    renderUserPerformance();
+    const nextPage = activeSessionPage > 1 ? activeSessionPage - 1 : totalSessionPages;
+    await loadAdminSessions(nextPage);
+    renderSessionSummary();
   });
 
-  nextUserButton.addEventListener("click", () => {
-    if (!userPerformanceItems.length) {
+  nextUserButton.addEventListener("click", async () => {
+    if (totalSessionPages <= 1) {
       return;
     }
 
-    activeUserIndex = activeUserIndex < userPerformanceItems.length - 1 ? activeUserIndex + 1 : 0;
-    renderUserPerformance();
+    const nextPage = activeSessionPage < totalSessionPages ? activeSessionPage + 1 : 1;
+    await loadAdminSessions(nextPage);
+    renderSessionSummary();
   });
 
   previousQuizButton.addEventListener("click", () => {
@@ -184,33 +163,25 @@ if (session) {
   });
 
   async function initializeAdminDashboard() {
-    const results = await Promise.allSettled([loadAdminQuizzes(), loadUserPerformance()]);
+    const results = await Promise.allSettled([loadAdminQuizzes(), loadAdminSessions(1)]);
     const quizServiceUnavailable = results[0].status === "rejected";
     const performanceServiceUnavailable = results[1].status === "rejected";
     const loadedEmptyQuizData = results[0].status === "fulfilled" && !quizzes.length;
-    const loadedEmptyPerformanceData = results[1].status === "fulfilled" && !userPerformanceItems.length;
-
-    if (performanceServiceUnavailable && !userPerformanceItems.length) {
-      userPerformanceItems = structuredClone(fallbackPerformanceItems);
-      usingPerformanceFallback = true;
-    }
-
-    if (!userPerformanceItems.length) {
-      userPerformanceItems = structuredClone(fallbackPerformanceItems);
-      usingPerformanceFallback = true;
-    }
+    const loadedEmptyPerformanceData = results[1].status === "fulfilled" && !adminSessionItems.length;
 
     activeQuizId = quizzes[0]?.id || "";
     updateSummary();
     renderQuizLibrary();
-    renderUserPerformance();
+    renderSessionSummary();
 
     if (quizServiceUnavailable) {
       setMessage(adminMessage, "Could not load categories from the quiz service. Please check service and database connection.", "error");
     } else if (loadedEmptyQuizData) {
       setMessage(adminMessage, "No categories yet. Click New Category to start adding your first category.", "success");
-    } else if (usingPerformanceFallback && (performanceServiceUnavailable || loadedEmptyPerformanceData)) {
-      setMessage(adminMessage, "Quiz data loaded from the database. User Score Summary is currently showing fallback sample data.", "error");
+    } else if (performanceServiceUnavailable) {
+      setMessage(adminMessage, "Quiz library loaded, but session records could not be loaded from database.", "error");
+    } else if (loadedEmptyPerformanceData) {
+      setMessage(adminMessage, "Quiz data loaded from the database. No moderated sessions recorded yet.", "success");
     } else {
       setMessage(adminMessage, "Quiz management data loaded from the quiz service.", "success");
     }
@@ -223,25 +194,21 @@ if (session) {
     quizzes = mergeQuizzesByCategory(detailPayloads.map((entry) => mapQuizDetail(quizApi.normalizeQuizDetail(entry))));
   }
 
-  async function loadUserPerformance() {
-    const results = [];
-    let page = 1;
-    let totalUsers = 0;
-
-    do {
-      const payload = await quizApi.getUserPerformance(session.token, { page, pageSize: 1 });
-      const normalized = quizApi.normalizeUserPerformance(payload);
-      totalUsers = normalized.totalUsers;
-      results.push(...normalized.items);
-      page += 1;
-    } while (results.length < totalUsers);
-
-    userPerformanceItems = results;
-    usingPerformanceFallback = false;
+  async function loadAdminSessions(page = 1) {
+    const payload = await quizApi.getAdminSessions(session.token, {
+      page,
+      pageSize: sessionPageSize
+    });
+    const normalized = quizApi.normalizeAdminSessions(payload);
+    adminSessionItems = normalized.items;
+    activeSessionPage = normalized.page || 1;
+    totalSessionsCount = normalized.totalSessions || 0;
+    totalSessionPages = Math.max(Math.ceil(totalSessionsCount / sessionPageSize), 1);
   }
 
   function updateSummary() {
-    setText(quizCountValue, String(quizzes.length));
+    const totalQuestions = quizzes.reduce((sum, quiz) => sum + (quiz.questions?.length || 0), 0);
+    setText(quizCountValue, String(totalQuestions));
     setText(categoryCountValue, String(new Set(quizzes.map((quiz) => quiz.category)).size));
   }
 
@@ -325,24 +292,29 @@ if (session) {
     nextQuizButton.hidden = !hasMultiplePages;
   }
 
-  function renderUserPerformance() {
-    const user = userPerformanceItems[activeUserIndex];
-    if (!user) {
-      setText(adminCurrentUserValue, "No users yet");
-      setText(adminTotalScoreValue, "0/0");
-      setText(adminTotalAttemptsValue, "0");
+  function renderSessionSummary() {
+    const activeCount = adminSessionItems.filter((entry) => String(entry.status).toLowerCase() === "active").length;
+    setText(adminTotalScoreValue, String(activeCount));
+    setText(adminTotalAttemptsValue, String(totalSessionsCount));
+
+    const latest = adminSessionItems[0];
+    if (!latest) {
+      setText(adminCurrentUserValue, "No sessions yet");
       setText(adminLastPlayedValue, "--");
       adminScoreSummaryList.textContent = "";
+      previousUserButton.hidden = true;
+      nextUserButton.hidden = true;
       return;
     }
 
-    setText(adminCurrentUserValue, user.email);
-    setText(adminTotalScoreValue, user.totalScore);
-    setText(adminTotalAttemptsValue, String(user.totalAttempts));
-    setText(adminLastPlayedValue, user.lastPlayed);
+    setText(adminCurrentUserValue, latest.sessionCode ? `${latest.sessionCode} (${latest.category})` : latest.category);
+    const ended = adminSessionItems
+      .map((entry) => entry.endedAtText)
+      .find((entry) => entry && entry !== "--") || "--";
+    setText(adminLastPlayedValue, ended);
     adminScoreSummaryList.textContent = "";
 
-    for (const quiz of user.quizStats || []) {
+    for (const sessionItem of adminSessionItems) {
       const item = document.createElement("article");
       item.className = "recent-result-card";
 
@@ -351,20 +323,49 @@ if (session) {
 
       const title = document.createElement("h3");
       title.className = "recent-result-title";
-      title.textContent = quiz.quizTitle;
+      title.textContent = `${sessionItem.category || "Unknown"}${sessionItem.sessionCode ? ` (${sessionItem.sessionCode})` : ""}`;
 
       const score = document.createElement("span");
       score.className = "recent-result-score";
-      score.textContent = quiz.bestScore;
+      score.textContent = sessionItem.status || "Unknown";
 
-      const completedAt = document.createElement("p");
-      completedAt.className = "recent-result-meta";
-      completedAt.textContent = `Highest score recorded: ${quiz.completedAt}`;
+      const startedAt = document.createElement("p");
+      startedAt.className = "recent-result-meta";
+      startedAt.textContent = `Started: ${sessionItem.startedAtText || "--"}`;
+
+      const endedAt = document.createElement("p");
+      endedAt.className = "recent-result-meta";
+      endedAt.textContent = `Ended: ${sessionItem.endedAtText || "--"}`;
+
+      const detail = document.createElement("p");
+      detail.className = "recent-result-meta";
+      detail.textContent = `Host: ${sessionItem.hostEmail || "--"} • Participants: ${sessionItem.participantCount ?? 0} • Questions: ${sessionItem.questionCount ?? 0}`;
+
+      const isActive = String(sessionItem.status || "").toLowerCase() === "active";
+      if (isActive && sessionItem.sessionCode) {
+        item.classList.add("is-clickable-session");
+        item.title = `Resume session ${sessionItem.sessionCode}`;
+        item.setAttribute("role", "button");
+        item.tabIndex = 0;
+        item.addEventListener("click", () => {
+          window.location.href = `${AppConfig.pages.moderatedHost}?resume=${encodeURIComponent(sessionItem.sessionCode)}`;
+        });
+        item.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            window.location.href = `${AppConfig.pages.moderatedHost}?resume=${encodeURIComponent(sessionItem.sessionCode)}`;
+          }
+        });
+      }
 
       heading.append(title, score);
-      item.append(heading, completedAt);
+      item.append(heading, startedAt, endedAt, detail);
       adminScoreSummaryList.appendChild(item);
     }
+
+    const hasMultiplePages = totalSessionPages > 1;
+    previousUserButton.hidden = !hasMultiplePages;
+    nextUserButton.hidden = !hasMultiplePages;
   }
 
   function openQuestionModal(quizId, questionIndex, options = {}) {

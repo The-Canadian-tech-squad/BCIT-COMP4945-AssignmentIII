@@ -962,6 +962,18 @@ body[data-page="admin-dashboard"] .admin-details-block .recent-result-card {
   line-height: 1.55;
 }
 
+body[data-page="admin-dashboard"] .admin-details-block .recent-result-card.is-clickable-session {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+body[data-page="admin-dashboard"] .admin-details-block .recent-result-card.is-clickable-session:hover,
+body[data-page="admin-dashboard"] .admin-details-block .recent-result-card.is-clickable-session:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 920px) {
   body[data-page="admin-dashboard"] .admin-dashboard-left,
   body[data-page="admin-dashboard"] .admin-dashboard-right {

@@ -8,6 +8,7 @@ import {
   normalizeQuizDetail,
   normalizeQuizSummary,
   normalizeQuizSummaryResponse,
+  normalizeAdminSessionsPage,
   normalizeUserPerformancePage
 } from "../schemas/quiz-schemas.js";
 import { HttpClient } from "./http-client.js";
@@ -135,6 +136,18 @@ export class QuizApiService {
     });
   }
 
+  async getAdminSessions(token, { page = 1, pageSize = 5 } = {}) {
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize)
+    });
+
+    return this.httpClient.request(this.#buildUrl(`${AppConfig.endpoints.adminSessions}?${query}`), {
+      method: "GET",
+      headers: this.#authHeaders(token)
+    });
+  }
+
   normalizeCategories(payload) {
     const rows = Array.isArray(payload) ? payload : payload?.categories || [];
     return rows.map((row) => normalizeCategory(row));
@@ -158,6 +171,10 @@ export class QuizApiService {
 
   normalizeUserPerformance(payload) {
     return normalizeUserPerformancePage(payload);
+  }
+
+  normalizeAdminSessions(payload) {
+    return normalizeAdminSessionsPage(payload);
   }
 
   #buildUrl(path) {

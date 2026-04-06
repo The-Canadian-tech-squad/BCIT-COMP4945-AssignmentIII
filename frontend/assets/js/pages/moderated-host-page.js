@@ -33,6 +33,7 @@ if (session) {
     quizzes: [],
     activeSession: null,
     activeQuiz: null,
+    resumeSessionCode: "",
     activeQuestionIndex: -1,
     activeQuestion: null,
     activeStats: null
@@ -76,6 +77,7 @@ if (session) {
   });
 
   startQuestionButton.addEventListener("click", async () => {
+    syncActiveQuizFromSelect();
     if (!state.activeQuiz?.questions?.length) {
       setMessage(hostMessage, "No questions available for this category.", "error");
       return;
@@ -86,7 +88,9 @@ if (session) {
   });
 
   nextQuestionButton.addEventListener("click", async () => {
+    syncActiveQuizFromSelect();
     if (!state.activeQuiz?.questions?.length) {
+      setMessage(hostMessage, "Session quiz is still syncing. Please try again in a moment.", "error");
       return;
     }
 
@@ -102,7 +106,9 @@ if (session) {
   });
 
   previousQuestionButton.addEventListener("click", async () => {
+    syncActiveQuizFromSelect();
     if (!state.activeQuiz?.questions?.length) {
+      setMessage(hostMessage, "Session quiz is still syncing. Please try again in a moment.", "error");
       return;
     }
 
@@ -166,9 +172,35 @@ if (session) {
     try {
       await loadQuizzes();
       await ensureConnection();
-      setMessage(hostMessage, "Moderated host ready.", "success");
+      const resumeHandled = await tryResumeFromUrl();
+      if (!resumeHandled) {
+        setMessage(hostMessage, "Moderated host ready.", "success");
+      }
     } catch (error) {
       setMessage(hostMessage, error?.message || "Could not initialize moderated host.", "error");
+    }
+  }
+
+  async function tryResumeFromUrl() {
+    const params = new URLSearchParams(window.location.search || "");
+    const sessionCode = (params.get("resume") || "").trim().toUpperCase();
+    if (!sessionCode || !state.connection) {
+      return false;
+    }
+
+    try {
+      const resumed = await state.connection.invoke("HostResumeSession", sessionCode);
+      if (!resumed) {
+        setMessage(hostMessage, `Could not resume session ${sessionCode}. It may be closed or owned by another host.`, "error");
+        return true;
+      }
+
+      state.resumeSessionCode = sessionCode;
+      setMessage(hostMessage, `Resumed session ${sessionCode}.`, "success");
+      return true;
+    } catch (error) {
+      setMessage(hostMessage, error?.message || `Could not resume session ${sessionCode}.`, "error");
+      return true;
     }
   }
 
@@ -240,7 +272,7 @@ if (session) {
 
     state.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${AppConfig.quizServiceBaseUrl}/hubs/moderated-quiz`, {
-        accessTokenFactory: () => session.token
+        accessTokenFactory: () => sessionController.getSession().token || ""
       })
       .withAutomaticReconnect()
       .build();
@@ -248,12 +280,14 @@ if (session) {
     state.connection.on("SessionUpdated", (snapshot) => {
       if (!state.activeSession || snapshot?.sessionCode === state.activeSession.sessionCode) {
         state.activeSession = snapshot;
+        hydrateActiveQuizFromSnapshot(snapshot);
         renderSession(snapshot);
       }
     });
 
     state.connection.on("QuestionChanged", (questionState) => {
       state.activeQuestion = questionState;
+      hydrateQuestionPosition(questionState);
       renderQuestion(questionState);
     });
 
@@ -290,6 +324,10 @@ if (session) {
   }
 
   async function pushCurrentQuestion() {
+    if (!state.activeSession?.sessionCode && state.resumeSessionCode) {
+      state.activeSession = { sessionCode: state.resumeSessionCode, participantCount: 0, participants: [] };
+    }
+
     if (!state.activeSession?.sessionCode || !state.activeQuiz) {
       setMessage(hostMessage, "Create a session first.", "error");
       return;
@@ -323,6 +361,26 @@ if (session) {
       if (!accepted) {
         throw new Error("Host cannot push this question.");
       }
+
+      state.activeQuestion = {
+        questionId: payload.questionId,
+        questionText: payload.questionText,
+        mediaType: payload.mediaType,
+        mediaUrl: payload.mediaUrl,
+        mediaPrompt: payload.mediaPrompt,
+        options: payload.options,
+        correctOptionIndex: payload.correctOptionIndex,
+        isAnswerRevealed: false,
+        questionIndex: payload.questionIndex,
+        totalQuestions: payload.totalQuestions
+      };
+      state.activeStats = {
+        questionId: payload.questionId,
+        optionCounts: payload.options.map(() => 0),
+        totalResponses: 0
+      };
+      renderQuestion(state.activeQuestion);
+      renderStats(state.activeStats);
 
       setDisabled(startQuestionButton, true);
       setDisabled(revealAnswerButton, false);
@@ -380,17 +438,78 @@ if (session) {
     participantList.textContent = "";
   }
 
+  function syncHostControlStates() {
+    const hasSession = Boolean(state.activeSession?.sessionCode);
+    const hasQuizQuestions = Boolean(state.activeQuiz?.questions?.length);
+    const hasQuestion = Boolean(state.activeQuestion);
+    const questionNo = Number(state.activeQuestion?.questionIndex || 0);
+    const totalQuestions = Number(state.activeQuestion?.totalQuestions || 0);
+
+    setDisabled(endSessionButton, !hasSession);
+    setDisabled(startQuestionButton, !hasSession || !hasQuizQuestions || hasQuestion);
+    setDisabled(revealAnswerButton, !hasQuestion || Boolean(state.activeQuestion?.isAnswerRevealed));
+    setDisabled(previousQuestionButton, !hasQuestion || questionNo <= 1);
+    setDisabled(nextQuestionButton, !hasQuestion || questionNo >= totalQuestions);
+  }
+
+  function hydrateActiveQuizFromSnapshot(snapshot) {
+    if (!snapshot || !Array.isArray(state.quizzes) || !state.quizzes.length) {
+      return;
+    }
+
+    const snapshotQuizId = String(snapshot.quizId || "").trim();
+    const snapshotQuizTitle = String(snapshot.quizTitle || "").trim().toLowerCase();
+    const matched = state.quizzes.find((quiz) =>
+      (snapshotQuizId && quiz.id === snapshotQuizId) ||
+      (snapshotQuizTitle && String(quiz.label || "").trim().toLowerCase() === snapshotQuizTitle)
+    );
+
+    if (matched) {
+      state.activeQuiz = matched;
+      hostQuizSelect.value = matched.id;
+      return;
+    }
+
+    if (!state.activeQuiz) {
+      state.activeQuiz = state.quizzes[0];
+      hostQuizSelect.value = state.activeQuiz.id;
+    }
+  }
+
+  function syncActiveQuizFromSelect() {
+    const selectedId = String(hostQuizSelect?.value || "").trim();
+    if (!selectedId || !Array.isArray(state.quizzes) || !state.quizzes.length) {
+      return;
+    }
+
+    const matched = state.quizzes.find((quiz) => quiz.id === selectedId);
+    if (matched) {
+      state.activeQuiz = matched;
+    }
+  }
+
+  function hydrateQuestionPosition(questionState) {
+    if (!questionState) {
+      state.activeQuestionIndex = -1;
+      return;
+    }
+
+    const questionNo = Number(questionState.questionIndex || 0);
+    if (questionNo > 0) {
+      state.activeQuestionIndex = questionNo - 1;
+    }
+  }
+
   function renderSession(snapshot) {
     if (!snapshot?.sessionCode) {
       sessionCodePill.hidden = true;
       hostQuestionPanel.hidden = true;
       participantList.textContent = "";
-      setDisabled(endSessionButton, true);
+      syncHostControlStates();
       return;
     }
 
     sessionCodePill.hidden = false;
-    setDisabled(endSessionButton, false);
     setText(sessionCodePill, `Session Code: ${snapshot.sessionCode}`);
 
     participantList.textContent = "";
@@ -402,6 +521,7 @@ if (session) {
       empty.textContent = "No participants joined yet.";
       participantList.appendChild(empty);
       renderStats(state.activeStats);
+      syncHostControlStates();
       return;
     }
 
@@ -418,6 +538,7 @@ if (session) {
     });
 
     renderStats(state.activeStats);
+    syncHostControlStates();
   }
 
   function renderQuestion(questionState) {
@@ -426,9 +547,9 @@ if (session) {
       setText(hostMonitorTitle, "No active question");
       setText(hostQuestionTitle, "No active question");
       setText(hostQuestionText, "Create a session and start the first question.");
-      setDisabled(revealAnswerButton, true);
       renderHostMediaPreview(null);
       renderHostOptions([], []);
+      syncHostControlStates();
       return;
     }
 
@@ -438,10 +559,10 @@ if (session) {
     setText(hostMonitorTitle, `Current question: ${questionNo}/${totalQuestions}`);
     setText(hostQuestionTitle, `Question ${questionNo}/${totalQuestions}`);
     setText(hostQuestionText, questionState.questionText || "");
-    setDisabled(revealAnswerButton, Boolean(questionState.isAnswerRevealed));
     renderHostMediaPreview(questionState);
     renderHostOptions(questionState.options || [], state.activeStats?.optionCounts || [], questionState);
     renderStats(state.activeStats);
+    syncHostControlStates();
   }
 
   function renderStats(stats) {

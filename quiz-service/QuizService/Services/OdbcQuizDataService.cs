@@ -16,6 +16,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
     private readonly string _questionsTable;
     private readonly string _individualAnswersTable;
     private readonly string _moderatedAnswersTable;
+    private readonly string _sessionsTable;
     private readonly string _usersTable;
     private readonly string _rolesTable;
 
@@ -27,6 +28,7 @@ public sealed class OdbcQuizDataService : IQuizDataService
         _questionsTable = ResolveTableName(value.QuestionsTableName, "QUESTIONS");
         _individualAnswersTable = ResolveTableName(value.IndividualAnswersTableName, "INDIVIDUAL_ANSWERS");
         _moderatedAnswersTable = ResolveTableName(value.ModeratedAnswersTableName, "MODERATED_ANSWERS");
+        _sessionsTable = "SESSIONS";
         _usersTable = ResolveTableName(value.UsersTableName, "USERS");
         _rolesTable = ResolveTableName(value.RolesTableName, "ROLES");
     }
@@ -556,7 +558,14 @@ public sealed class OdbcQuizDataService : IQuizDataService
             ? userEmail.Trim().ToLowerInvariant()
             : await ResolveUserEmailAsync(connection, dbUserId);
 
-        return await LoadHistoriesAsync(connection, dbUserId, resolvedEmail);
+        try
+        {
+            return await LoadModeratedHistoriesAsync(connection, dbUserId, resolvedEmail);
+        }
+        catch (OdbcException)
+        {
+            return [];
+        }
     }
 
     public async Task<IReadOnlyList<UserHistoryDto>> GetHistoriesAsync()
@@ -567,11 +576,11 @@ public sealed class OdbcQuizDataService : IQuizDataService
         var userIds = new List<long>();
         using (var command = connection.CreateCommand())
         {
-            command.CommandText = $"SELECT DISTINCT USER_ID FROM {_individualAnswersTable}";
+            command.CommandText = $"SELECT DISTINCT PARTICIPANT_ID FROM {_moderatedAnswersTable}";
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                userIds.Add(ReadLong(reader, "USER_ID"));
+                userIds.Add(ReadLong(reader, "PARTICIPANT_ID"));
             }
         }
 
@@ -579,12 +588,146 @@ public sealed class OdbcQuizDataService : IQuizDataService
         foreach (var id in userIds.Distinct())
         {
             var email = await ResolveUserEmailAsync(connection, id);
-            all.AddRange(await LoadHistoriesAsync(connection, id, email));
+            try
+            {
+                all.AddRange(await LoadModeratedHistoriesAsync(connection, id, email));
+            }
+            catch (OdbcException)
+            {
+                // Skip malformed history reads so admin endpoints remain available.
+            }
         }
 
         return all
             .OrderByDescending(history => history.CompletedAt)
             .ToList();
+    }
+
+    public async Task<IReadOnlyList<AdminSessionSummaryDto>> GetAdminSessionsAsync()
+    {
+        using var connection = CreateConnection();
+        await connection.OpenAsync();
+
+        var sessions = new List<SessionRow>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = $"""
+                SELECT SESSION_ID, HOST_USER_ID, SESSION_NAME, STATUS, START_AT, END_AT
+                FROM {_sessionsTable}
+                ORDER BY SESSION_ID DESC
+                """;
+
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                sessions.Add(new SessionRow
+                {
+                    SessionId = ReadLong(reader, "SESSION_ID"),
+                    HostUserId = ReadLong(reader, "HOST_USER_ID"),
+                    SessionName = ReadString(reader, "SESSION_NAME"),
+                    Status = ReadString(reader, "STATUS"),
+                    StartAt = ReadNullableDateTimeOffset(reader, "START_AT"),
+                    EndAt = ReadNullableDateTimeOffset(reader, "END_AT")
+                });
+            }
+        }
+
+        if (sessions.Count == 0)
+        {
+            return [];
+        }
+
+        var sessionIds = sessions.Select(entry => entry.SessionId).Distinct().ToList();
+        var hostIds = sessions.Select(entry => entry.HostUserId).Where(entry => entry > 0).Distinct().ToList();
+        var statsBySession = await LoadSessionStatsAsync(connection, sessionIds);
+        var hostEmailById = await LoadUserEmailsAsync(connection, hostIds);
+
+        return sessions
+            .Select(entry =>
+            {
+                statsBySession.TryGetValue(entry.SessionId, out var stats);
+                stats ??= new SessionStatsRow();
+                hostEmailById.TryGetValue(entry.HostUserId, out var hostEmail);
+                var category = ParseCategoryFromSessionName(entry.SessionName);
+                var sessionCode = ParseSessionCode(entry.SessionName);
+                var status = NormalizeSessionStatus(entry.Status);
+                var startedAt = entry.StartAt ?? stats.FirstAnswerAt;
+                var endedAt = string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase)
+                    ? (DateTimeOffset?)null
+                    : (entry.EndAt ?? stats.LastAnswerAt);
+
+                return new AdminSessionSummaryDto
+                {
+                    Id = NumberToGuid(entry.SessionId),
+                    SessionCode = sessionCode,
+                    Category = category,
+                    HostEmail = hostEmail ?? string.Empty,
+                    Status = status,
+                    StartedAt = startedAt,
+                    EndedAt = endedAt,
+                    ParticipantCount = stats.ParticipantCount,
+                    QuestionCount = stats.QuestionCount
+                };
+            })
+            .ToList();
+    }
+
+    private async Task<Dictionary<long, SessionStatsRow>> LoadSessionStatsAsync(OdbcConnection connection, List<long> sessionIds)
+    {
+        if (sessionIds.Count == 0)
+        {
+            return [];
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT SESSION_ID,
+                   COUNT(DISTINCT PARTICIPANT_ID) AS PARTICIPANT_COUNT,
+                   COUNT(DISTINCT QUESTION_ID) AS QUESTION_COUNT
+            FROM {_moderatedAnswersTable}
+            WHERE SESSION_ID IN ({string.Join(", ", sessionIds)})
+            GROUP BY SESSION_ID
+            """;
+
+        var map = new Dictionary<long, SessionStatsRow>();
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var sessionId = ReadLong(reader, "SESSION_ID");
+            map[sessionId] = new SessionStatsRow
+            {
+                ParticipantCount = ReadInt(reader, "PARTICIPANT_COUNT"),
+                QuestionCount = ReadInt(reader, "QUESTION_COUNT"),
+                FirstAnswerAt = null,
+                LastAnswerAt = null
+            };
+        }
+
+        return map;
+    }
+
+    private async Task<Dictionary<long, string>> LoadUserEmailsAsync(OdbcConnection connection, List<long> userIds)
+    {
+        if (userIds.Count == 0)
+        {
+            return [];
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT USER_ID, EMAIL
+            FROM {_usersTable}
+            WHERE USER_ID IN ({string.Join(", ", userIds)})
+            """;
+
+        var map = new Dictionary<long, string>();
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            map[ReadLong(reader, "USER_ID")] = ReadString(reader, "EMAIL");
+        }
+
+        return map;
     }
 
     private async Task<IReadOnlyList<UserHistoryDto>> LoadHistoriesAsync(OdbcConnection connection, long dbUserId, string userEmail)
@@ -600,14 +743,11 @@ public sealed class OdbcQuizDataService : IQuizDataService
                        ia.SELECTED_ANSWER,
                        ia.IS_CORRECT,
                        ia.SCORE,
-                       ia.CREATED_AT,
-                       q.CATEGORY_ID
+                       ia.CREATED_AT
                 FROM {_individualAnswersTable} ia
-                JOIN {_questionsTable} q ON q.QUESTION_ID = ia.QUESTION_ID
-                WHERE ia.USER_ID = ?
+                WHERE ia.USER_ID = {dbUserId}
                 ORDER BY ia.CREATED_AT DESC, ia.ANSWER_ID DESC
                 """;
-            command.Parameters.Add(new OdbcParameter { Value = dbUserId });
 
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -621,10 +761,29 @@ public sealed class OdbcQuizDataService : IQuizDataService
                     IsCorrect = ReadInt(reader, "IS_CORRECT") == 1,
                     Score = ReadInt(reader, "SCORE"),
                     CreatedAt = ReadDateTimeOffset(reader, "CREATED_AT"),
-                    CategoryId = ReadLong(reader, "CATEGORY_ID"),
                     Email = userEmail
                 });
             }
+        }
+
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var categoryByQuestionId = await LoadCategoryMapAsync(connection, rows.Select(entry => entry.QuestionId));
+        rows = rows
+            .Where(entry => categoryByQuestionId.ContainsKey(entry.QuestionId))
+            .Select(entry =>
+            {
+                entry.CategoryId = categoryByQuestionId[entry.QuestionId];
+                return entry;
+            })
+            .ToList();
+
+        if (rows.Count == 0)
+        {
+            return [];
         }
 
         var grouped = rows
@@ -659,6 +818,132 @@ public sealed class OdbcQuizDataService : IQuizDataService
         }
 
         return histories;
+    }
+
+    private async Task<IReadOnlyList<UserHistoryDto>> LoadModeratedHistoriesAsync(OdbcConnection connection, long dbUserId, string userEmail)
+    {
+        var rows = new List<ModeratedHistoryRow>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = $"""
+                SELECT ANSWER_ID,
+                       SESSION_ID,
+                       QUESTION_ID,
+                       PARTICIPANT_ID,
+                       SELECTED_ANSWER,
+                       IS_CORRECT,
+                       SCORE,
+                       CREATED_AT
+                FROM {_moderatedAnswersTable}
+                WHERE PARTICIPANT_ID = {dbUserId}
+                ORDER BY CREATED_AT DESC, ANSWER_ID DESC
+                """;
+
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                rows.Add(new ModeratedHistoryRow
+                {
+                    AnswerId = ReadLong(reader, "ANSWER_ID"),
+                    SessionId = ReadLong(reader, "SESSION_ID"),
+                    QuestionId = ReadLong(reader, "QUESTION_ID"),
+                    UserId = ReadLong(reader, "PARTICIPANT_ID"),
+                    SelectedAnswer = ReadString(reader, "SELECTED_ANSWER"),
+                    IsCorrect = ReadInt(reader, "IS_CORRECT") == 1,
+                    Score = ReadInt(reader, "SCORE"),
+                    CreatedAt = ReadDateTimeOffset(reader, "CREATED_AT"),
+                    Email = userEmail
+                });
+            }
+        }
+
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var categoryByQuestionId = await LoadCategoryMapAsync(connection, rows.Select(entry => entry.QuestionId));
+        rows = rows
+            .Where(entry => categoryByQuestionId.ContainsKey(entry.QuestionId))
+            .Select(entry =>
+            {
+                entry.CategoryId = categoryByQuestionId[entry.QuestionId];
+                return entry;
+            })
+            .ToList();
+
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var grouped = rows
+            .GroupBy(row => row.SessionId)
+            .OrderByDescending(group => group.Max(entry => entry.CreatedAt))
+            .ToList();
+
+        var histories = new List<UserHistoryDto>();
+        foreach (var group in grouped)
+        {
+            var answers = group
+                .OrderBy(entry => entry.AnswerId)
+                .Select(entry => new UserHistoryAnswerDto
+                {
+                    QuestionId = NumberToGuid(entry.QuestionId),
+                    SelectedOptionId = entry.SelectedAnswer.ToLowerInvariant(),
+                    IsCorrect = entry.IsCorrect
+                })
+                .ToList();
+
+            var categoryId = group
+                .GroupBy(entry => entry.CategoryId)
+                .OrderByDescending(entry => entry.Count())
+                .Select(entry => entry.Key)
+                .FirstOrDefault();
+
+            histories.Add(new UserHistoryDto
+            {
+                Id = NumberToGuid(group.Key),
+                QuizId = NumberToGuid(categoryId),
+                UserId = group.First().UserId.ToString(),
+                Email = group.First().Email,
+                Score = group.Sum(entry => entry.Score),
+                TotalQuestions = group.Count(),
+                CompletedAt = group.Max(entry => entry.CreatedAt),
+                Answers = answers
+            });
+        }
+
+        return histories;
+    }
+
+    private async Task<Dictionary<long, long>> LoadCategoryMapAsync(OdbcConnection connection, IEnumerable<long> questionIds)
+    {
+        var ids = questionIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            return new Dictionary<long, long>();
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT QUESTION_ID, CATEGORY_ID
+            FROM {_questionsTable}
+            WHERE QUESTION_ID IN ({string.Join(", ", ids)})
+            """;
+
+        var map = new Dictionary<long, long>();
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            map[ReadLong(reader, "QUESTION_ID")] = ReadLong(reader, "CATEGORY_ID");
+        }
+
+        return map;
     }
 
     private async Task<List<CategoryRow>> LoadCategoriesAsync(OdbcConnection connection, long? categoryId)
@@ -1006,6 +1291,55 @@ public sealed class OdbcQuizDataService : IQuizDataService
         return string.IsNullOrWhiteSpace(value) ? "NULL" : ToSqlStringLiteral(value);
     }
 
+    private static string ParseSessionCode(string sessionName)
+    {
+        if (string.IsNullOrWhiteSpace(sessionName))
+        {
+            return string.Empty;
+        }
+
+        var parts = sessionName.Split(':', 3, StringSplitOptions.TrimEntries);
+        return parts.Length >= 2 && string.Equals(parts[0], "MOD", StringComparison.OrdinalIgnoreCase)
+            ? parts[1]
+            : string.Empty;
+    }
+
+    private static string ParseCategoryFromSessionName(string sessionName)
+    {
+        if (string.IsNullOrWhiteSpace(sessionName))
+        {
+            return "Unknown";
+        }
+
+        var parts = sessionName.Split(':', 3, StringSplitOptions.TrimEntries);
+        if (parts.Length >= 3 && string.Equals(parts[0], "MOD", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.IsNullOrWhiteSpace(parts[2]) ? "Unknown" : parts[2];
+        }
+
+        return sessionName;
+    }
+
+    private static string NormalizeSessionStatus(string status)
+    {
+        if (string.Equals(status, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Active";
+        }
+
+        if (string.Equals(status, "completed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Completed";
+        }
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return "Unknown";
+        }
+
+        return status.Trim();
+    }
+
     private static string ReadString(DbDataReader reader, string column)
     {
         var value = reader[column];
@@ -1030,6 +1364,22 @@ public sealed class OdbcQuizDataService : IQuizDataService
         if (value == DBNull.Value)
         {
             return DateTimeOffset.UtcNow;
+        }
+
+        return value switch
+        {
+            DateTimeOffset dto => dto,
+            DateTime dt => new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc)),
+            _ => DateTimeOffset.Parse(Convert.ToString(value) ?? string.Empty)
+        };
+    }
+
+    private static DateTimeOffset? ReadNullableDateTimeOffset(DbDataReader reader, string column)
+    {
+        var value = reader[column];
+        if (value == DBNull.Value)
+        {
+            return null;
         }
 
         return value switch
@@ -1097,6 +1447,38 @@ public sealed class OdbcQuizDataService : IQuizDataService
         public DateTimeOffset CreatedAt { get; set; }
         public long CategoryId { get; set; }
         public string Email { get; set; } = string.Empty;
+    }
+
+    private sealed class ModeratedHistoryRow
+    {
+        public long AnswerId { get; set; }
+        public long SessionId { get; set; }
+        public long QuestionId { get; set; }
+        public long UserId { get; set; }
+        public string SelectedAnswer { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public int Score { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public long CategoryId { get; set; }
+        public string Email { get; set; } = string.Empty;
+    }
+
+    private sealed class SessionRow
+    {
+        public long SessionId { get; set; }
+        public long HostUserId { get; set; }
+        public string SessionName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTimeOffset? StartAt { get; set; }
+        public DateTimeOffset? EndAt { get; set; }
+    }
+
+    private sealed class SessionStatsRow
+    {
+        public int ParticipantCount { get; set; }
+        public int QuestionCount { get; set; }
+        public DateTimeOffset? FirstAnswerAt { get; set; }
+        public DateTimeOffset? LastAnswerAt { get; set; }
     }
 
     private sealed class MediaMeta
