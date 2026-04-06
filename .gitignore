@@ -56,3 +56,9 @@ obj/
 
 # Local tooling
 .codex
+
+# Oracle local assets (never commit secrets/binaries)
+docker/oracle/packages/*
+!docker/oracle/packages/.gitkeep
+docker/oracle/wallet/*
+!docker/oracle/wallet/.gitkeep
