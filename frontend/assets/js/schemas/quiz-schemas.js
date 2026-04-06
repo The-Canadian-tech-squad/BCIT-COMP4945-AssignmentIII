@@ -135,6 +135,29 @@ export function normalizeUserPerformancePage(payload) {
   };
 }
 
+export function normalizeAdminSessionsPage(payload) {
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+
+  return {
+    page: payload?.page ?? 1,
+    pageSize: payload?.pageSize ?? items.length,
+    totalSessions: payload?.totalSessions ?? items.length,
+    items: items.map((item) => ({
+      id: item?.id || "",
+      sessionCode: item?.sessionCode || "",
+      category: item?.category || "",
+      hostEmail: item?.hostEmail || "",
+      status: item?.status || "",
+      startedAt: item?.startedAt || "",
+      endedAt: item?.endedAt || "",
+      startedAtText: item?.startedAtText || "--",
+      endedAtText: item?.endedAtText || "--",
+      participantCount: item?.participantCount ?? 0,
+      questionCount: item?.questionCount ?? 0
+    }))
+  };
+}
+
 export function normalizeQuizAttemptSummary(payload) {
   return {
     message: payload?.message || "",

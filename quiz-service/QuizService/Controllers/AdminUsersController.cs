@@ -78,4 +78,45 @@ public class AdminUsersController : ControllerBase
             items
         });
     }
+
+    [HttpGet("sessions")]
+    public async Task<IActionResult> GetSessions([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
+    {
+        var sessions = await _quizDataService.GetAdminSessionsAsync();
+
+        var ordered = sessions
+            .OrderByDescending(entry => entry.StartedAt ?? DateTimeOffset.MinValue)
+            .ToList();
+
+        var safePageSize = Math.Max(pageSize, 1);
+        var totalSessions = ordered.Count;
+        var totalPages = Math.Max((int)Math.Ceiling(totalSessions / (double)safePageSize), 1);
+        var safePage = Math.Clamp(page, 1, totalPages);
+        var items = ordered
+            .Skip((safePage - 1) * safePageSize)
+            .Take(safePageSize)
+            .Select(entry => new
+            {
+                id = entry.Id,
+                sessionCode = entry.SessionCode,
+                category = entry.Category,
+                hostEmail = entry.HostEmail,
+                status = entry.Status,
+                startedAt = entry.StartedAt,
+                endedAt = entry.EndedAt,
+                startedAtText = entry.StartedAt.HasValue ? entry.StartedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "--",
+                endedAtText = entry.EndedAt.HasValue ? entry.EndedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "--",
+                participantCount = entry.ParticipantCount,
+                questionCount = entry.QuestionCount
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            page = safePage,
+            pageSize = safePageSize,
+            totalSessions,
+            items
+        });
+    }
 }

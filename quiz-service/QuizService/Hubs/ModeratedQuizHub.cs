@@ -10,11 +10,16 @@ public sealed class ModeratedQuizHub : Hub
 {
     private readonly ModeratedQuizSessionStore _sessionStore;
     private readonly IModeratedQuizPersistenceService _persistenceService;
+    private readonly ILogger<ModeratedQuizHub> _logger;
 
-    public ModeratedQuizHub(ModeratedQuizSessionStore sessionStore, IModeratedQuizPersistenceService persistenceService)
+    public ModeratedQuizHub(
+        ModeratedQuizSessionStore sessionStore,
+        IModeratedQuizPersistenceService persistenceService,
+        ILogger<ModeratedQuizHub> logger)
     {
         _sessionStore = sessionStore;
         _persistenceService = persistenceService;
+        _logger = logger;
     }
 
     public async Task<ModeratedSessionSnapshot> HostCreateSession(string quizId, string quizTitle)
@@ -206,9 +211,15 @@ public sealed class ModeratedQuizHub : Hub
         {
             await _persistenceService.TrackSessionCreatedAsync(snapshot.SessionCode, hostEmail, snapshot.QuizId, snapshot.QuizTitle);
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep moderated mode live even if persistence fails.
+            _logger.LogError(
+                ex,
+                "Failed to persist moderated session creation. SessionCode={SessionCode}, HostEmail={HostEmail}, QuizId={QuizId}, QuizTitle={QuizTitle}",
+                snapshot.SessionCode,
+                hostEmail,
+                snapshot.QuizId,
+                snapshot.QuizTitle);
         }
     }
 
@@ -218,9 +229,15 @@ public sealed class ModeratedQuizHub : Hub
         {
             await _persistenceService.TrackAnswerSubmittedAsync(sessionCode, questionId, participantEmail, selectedOptionIndex);
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep moderated mode live even if persistence fails.
+            _logger.LogError(
+                ex,
+                "Failed to persist moderated answer. SessionCode={SessionCode}, QuestionId={QuestionId}, ParticipantEmail={ParticipantEmail}, SelectedOptionIndex={SelectedOptionIndex}",
+                sessionCode,
+                questionId,
+                participantEmail,
+                selectedOptionIndex);
         }
     }
 
@@ -230,9 +247,12 @@ public sealed class ModeratedQuizHub : Hub
         {
             await _persistenceService.TrackSessionCompletedAsync(sessionCode);
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep moderated mode live even if persistence fails.
+            _logger.LogError(
+                ex,
+                "Failed to persist moderated session completion. SessionCode={SessionCode}",
+                sessionCode);
         }
     }
 }

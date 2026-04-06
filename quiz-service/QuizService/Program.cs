@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.IdentityModel.Tokens;
 using QuizService.Hubs;
 using QuizService.Options;
@@ -143,11 +145,56 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var frontendRoot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (Directory.Exists(frontendRoot))
+{
+    app.Logger.LogInformation("Frontend static root found at {FrontendRoot}", frontendRoot);
+    var contentTypeProvider = new FileExtensionContentTypeProvider();
+    var absoluteFrontendRoot = Path.GetFullPath(frontendRoot);
+
+    app.Use(async (context, next) =>
+    {
+        if (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method))
+        {
+            var requestedPath = context.Request.Path.Value ?? "/";
+            if (requestedPath == "/")
+            {
+                requestedPath = "/index.html";
+            }
+
+            var relativePath = requestedPath.TrimStart('/');
+            if (!string.IsNullOrWhiteSpace(relativePath) &&
+                !relativePath.Contains("..", StringComparison.Ordinal))
+            {
+                var fullPath = Path.GetFullPath(Path.Combine(absoluteFrontendRoot, relativePath));
+                if (fullPath.StartsWith(absoluteFrontendRoot, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(fullPath))
+                {
+                    if (!contentTypeProvider.TryGetContentType(fullPath, out var contentType))
+                    {
+                        contentType = "application/octet-stream";
+                    }
+
+                    context.Response.ContentType = contentType;
+                    await context.Response.SendFileAsync(fullPath);
+                    return;
+                }
+            }
+        }
+
+        await next();
+    });
+}
+else
+{
+    app.Logger.LogWarning("Frontend static root not found at {FrontendRoot}", frontendRoot);
 }
 
 app.UseCors("FrontendPolicy");

@@ -304,7 +304,7 @@ if (session) {
     const summaryResult = results[1];
 
     if (categoryResult.status === "rejected" && !quizCategories.length) {
-      quizCategories = fallbackQuizCategories.map((quiz) => ({ ...quiz }));
+      quizCategories = [];
       renderQuizCategories();
     }
 
@@ -316,8 +316,8 @@ if (session) {
     if (categoryResult.status === "rejected" && summaryResult.status === "rejected") {
       setMessage(
         dashboardMessage,
-        "Choose a category to continue into quiz playback.",
-        "success"
+        "Could not load quiz categories from the quiz service/database right now.",
+        "error"
       );
       return;
     }
@@ -340,7 +340,7 @@ if (session) {
     const summaryResult = results[1];
 
     if (categoryResult.status === "rejected" && !quizCategories.length) {
-      quizCategories = fallbackQuizCategories.map((quiz) => ({ ...quiz }));
+      quizCategories = [];
       renderQuizCategories();
     }
 
@@ -440,7 +440,7 @@ if (session) {
     if (!recentResults.length) {
       const emptyState = document.createElement("p");
       emptyState.className = "recent-result-meta";
-      emptyState.textContent = "No recent scores yet. Complete a quiz to create your first record.";
+      emptyState.textContent = "No moderated session records yet.";
       recentResultsList.appendChild(emptyState);
       return;
     }
@@ -810,13 +810,7 @@ if (session) {
       quizDetailsById.set(quizId, quiz);
       return quiz;
     } catch (error) {
-      const fallbackQuiz = fallbackQuizDetails.get(quizId) || null;
-      if (fallbackQuiz) {
-        quizDetailsById.set(quizId, fallbackQuiz);
-        return fallbackQuiz;
-      }
-
-      setMessage(dashboardMessage, "Unable to open this quiz right now.", "error");
+      setMessage(dashboardMessage, error.message || "Unable to open this quiz from the database right now.", "error");
       return null;
     }
   }

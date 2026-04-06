@@ -16,4 +16,5 @@ public interface IQuizDataService
     Task<UserHistoryDto?> SaveHistoryAsync(Guid quizId, string userId, string userEmail, UserHistoryDto history);
     Task<IReadOnlyList<UserHistoryDto>> GetUserHistoriesAsync(string userId, string userEmail);
     Task<IReadOnlyList<UserHistoryDto>> GetHistoriesAsync();
+    Task<IReadOnlyList<AdminSessionSummaryDto>> GetAdminSessionsAsync();
 }
