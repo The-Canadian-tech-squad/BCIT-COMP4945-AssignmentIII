@@ -1,0 +1,54 @@
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/AuthService/Dockerfile
+    container_name: quiz-auth-service
+    ports:
+      - "5070:10000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ORACLE_ODBC_CONNECTION_STRING: "${ORACLE_ODBC_CONNECTION_STRING:-}"
+      JWT_KEY: "${JWT_KEY:-}"
+      TNS_ADMIN: "/opt/oracle/wallet"
+    volumes:
+      - "${ORACLE_WALLET_DIR:-./docker/oracle/wallet}:/opt/oracle/wallet:ro"
+    restart: unless-stopped
+
+  quiz-web:
+    build:
+      context: .
+      dockerfile: quiz-service/QuizService/Dockerfile
+    container_name: quiz-web
+    ports:
+      - "5080:10001"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ORACLE_ODBC_CONNECTION_STRING: "${ORACLE_ODBC_CONNECTION_STRING:-}"
+      JWT_KEY: "${JWT_KEY:-}"
+      TNS_ADMIN: "/opt/oracle/wallet"
+    volumes:
+      - "${ORACLE_WALLET_DIR:-./docker/oracle/wallet}:/opt/oracle/wallet:ro"
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+
+  # Optional local Oracle database container (separate from app container).
+  # Use only if your team needs a local Oracle instance:
+  #   docker compose --profile local-oracle up -d oracle-db
+  oracle-db:
+    image: gvenzl/oracle-free:23-slim
+    container_name: quiz-oracle-db
+    profiles: ["local-oracle"]
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: "QuizApp!12345"
+      APP_USER: "APPUSER"
+      APP_USER_PASSWORD: "QuizApp!12345"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    restart: unless-stopped
+
+volumes:
+  oracle-data:

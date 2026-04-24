@@ -1,0 +1,74 @@
+[
+  {
+    "Id": "00924b34-7f8b-4288-9981-1893b8412d6b",
+    "Email": "test@test.com",
+    "PasswordHash": "iX51TtZ5lnlCjecoy\u002Btshg==:xzokzp00cOfF7qMTyxLhfJ\u002BK\u002B2RAWy8nD5/5eleTB54=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:21:29.1926711Z"
+  },
+  {
+    "Id": "d40d4d89-cffd-433b-b9b8-cf0c84758cdf",
+    "Email": "john@john.com",
+    "PasswordHash": "m5Ee3T/IprJ6vv6D54136A==:wVs3451mkUm0WvrNrkjrReAlGHISWmsApTBaQVjhZdw=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:40:00Z"
+  },
+  {
+    "Id": "28d7b502-9725-4dad-abf8-aaad8300b91f",
+    "Email": "admin@admin.com",
+    "PasswordHash": "HrvLbGCnxvtY9J1isv8klA==:50LZmu6f7KCsTHpCRqTzgJdEkWFy/twlNiAsj7DUNqM=",
+    "Role": "admin",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-15T05:40:00Z"
+  },
+  {
+    "Id": "bb221fab-ab36-4e97-8865-1c50993dc3e7",
+    "Email": "test-jessie@test.com",
+    "PasswordHash": "CP3dazbw4bomoX7yagf7yg==:aRKZZLSL/b0qTzaDGwKKhyJD1pXMpJlZPjKsnZdSxtE=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-31T07:07:38.7373625Z"
+  },
+  {
+    "Id": "0a0ef26c-59f4-433d-a79d-506fbd205bec",
+    "Email": "test-12@test.com",
+    "PasswordHash": "ZjoA2/WmVUJWDazZ8jQhYA==:Woia0B6GEYTmxTIwnAYWm9pRNLho8ehZFXmVcQW8N8g=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-03-31T08:14:27.6122419Z"
+  },
+  {
+    "Id": "6ad514bc-b8fb-4f79-9304-a8dffe19c379",
+    "Email": "haven000@test.ca",
+    "PasswordHash": "\u002BejAA25rsvpD0fRnbK\u002Bcmg==:qKjPm73BVFx6oulfmjw\u002Bk6WdfG6xLOT5lG7YYgFbLcM=",
+    "Role": "admin",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-04-02T02:26:01.634078Z"
+  },
+  {
+    "Id": "4e3a811f-4fb4-4de0-aa5e-9a2366bd8829",
+    "Email": "xjr815226031@outlook.com",
+    "PasswordHash": "xVGkvgy\u002Bq/x\u002BReUYb2L9jg==:geVzgJkjIzuTVbhx2ItiXLWsPs5/\u002BT/tWg50OmwInJg=",
+    "Role": "admin",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-04-04T00:42:23.8118222Z"
+  },
+  {
+    "Id": "d0b04017-ecea-4130-95ee-dc92edb03735",
+    "Email": "xjrjerryxing@outlook.com",
+    "PasswordHash": "NR/Z5663PI5WhzpBOmEaTA==:bFhA8w0PYa/dPjj96O0/FxtLPicxiz8IYIxoAEahb7Y=",
+    "Role": "user",
+    "RemainingCalls": 20,
+    "UsageCount": 0,
+    "CreatedAtUtc": "2026-04-04T00:58:16.1627146Z"
+  }
+]

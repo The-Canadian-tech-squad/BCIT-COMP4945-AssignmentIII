@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Answerly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-page="login">
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Answerly</a>
+      <nav class="topbar-nav">
+        <a class="nav-link" href="./register.html">Register</a>
+      </nav>
+    </header>
+
+    <main class="auth-layout">
+      <section class="card card-accent intro-panel">
+        <p class="eyebrow">Authentication</p>
+        <h1>Log in to continue to your dashboard.</h1>
+        <p class="lead">Access your dashboard and continue your work.</p>
+      </section>
+
+      <section class="card card-panel form-panel">
+        <form id="loginForm" class="form-stack" novalidate>
+          <label class="field">
+            <span>Email</span>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+          </label>
+          <p id="emailError" class="field-error" aria-live="polite"></p>
+          <label class="field">
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <p id="passwordError" class="field-error" aria-live="polite"></p>
+          </label>
+          <button class="button" type="submit">Login</button>
+        </form>
+
+        <p id="formMessage" class="feedback-message" aria-live="polite"></p>
+        <p class="helper-copy">Need an account? <a href="./register.html">Create one</a>.</p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./assets/js/pages/login-page.js"></script>
+</body>
+</html>

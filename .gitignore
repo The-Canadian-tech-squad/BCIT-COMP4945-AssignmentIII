@@ -1,0 +1,64 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Java
+target/
+out/
+*.class
+
+# .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.rsuser
+*.suo
+
+# Local tooling
+.codex
+
+# Oracle local assets (never commit secrets/binaries)
+docker/oracle/packages/*
+!docker/oracle/packages/.gitkeep
+docker/oracle/wallet/*
+!docker/oracle/wallet/.gitkeep

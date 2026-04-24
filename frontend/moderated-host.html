@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderated Host | Answerly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-page="moderated-host">
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Answerly</a>
+      <nav class="topbar-nav">
+        <span id="hostUserLabel" class="nav-pill">Loading...</span>
+        <a class="button button-secondary" href="./admin-dashboard.html">Admin Dashboard</a>
+        <button id="logoutButton" class="button button-ghost" type="button">Logout</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-layout moderated-host-layout">
+      <section class="card card-panel quiz-categories-panel moderated-host-controls">
+        <p class="eyebrow">Moderated Mode</p>
+        <h2>Create Host Session</h2>
+        <p class="lead">Start a live session on the large screen and push each question to participant devices.</p>
+
+        <label class="field">
+          <span>Select category/quiz</span>
+          <select id="hostQuizSelect"></select>
+        </label>
+
+        <div class="editor-actions">
+          <button id="createSessionButton" class="button" type="button">Create Session</button>
+          <button id="startQuestionButton" class="button button-secondary" type="button" disabled>Start First Question</button>
+          <button id="endSessionButton" class="button button-danger-outline" type="button" disabled>End Session</button>
+        </div>
+
+        <p id="hostMessage" class="feedback-message" aria-live="polite"></p>
+        <p id="sessionCodePill" class="session-code-pill" hidden></p>
+      </section>
+
+      <section class="card card-panel score-summary-panel moderated-host-monitor">
+        <p class="eyebrow">Live Monitor</p>
+        <h2 id="hostMonitorTitle">No active question</h2>
+        <div id="hostStatsList" class="recent-results-list"></div>
+
+        <div class="recent-history-block">
+          <p class="panel-label">Participants</p>
+          <div id="participantList" class="recent-results-list"></div>
+        </div>
+      </section>
+
+      <section id="hostQuestionPanel" class="card card-panel moderated-host-question-panel" hidden>
+        <p class="eyebrow">Question Display</p>
+        <h2 id="hostQuestionTitle">No active question</h2>
+        <p id="hostQuestionText" class="recent-result-meta">Create a session and start the first question.</p>
+        <div id="hostMediaPreview" class="admin-media-preview"></div>
+        <div id="hostOptionList" class="quiz-options-list"></div>
+        <div class="editor-actions moderated-question-actions">
+          <button id="revealAnswerButton" class="button button-ghost" type="button" disabled>Reveal Answer</button>
+          <button id="previousQuestionButton" class="button button-secondary" type="button" disabled>Previous Question</button>
+          <button id="nextQuestionButton" class="button button-secondary" type="button" disabled>Next Question</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@9.0.6/dist/browser/signalr.min.js"></script>
+  <script type="module" src="./assets/js/pages/moderated-host-page.js"></script>
+</body>
+</html>
